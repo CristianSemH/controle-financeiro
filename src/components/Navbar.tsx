@@ -136,7 +136,11 @@ export default function Navbar() {
             <NavButton
                 icon={LogOut}
                 label="Sair"
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() =>
+                    signOut({
+                        callbackUrl: `${window.location.origin}/login`,
+                    })
+                }
             />
         </nav>
     );

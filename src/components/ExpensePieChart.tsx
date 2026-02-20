@@ -29,11 +29,7 @@ export default function ExpensePieChart({ data }: any) {
     );
 
     return (
-        <div className="bg-white rounded-xl shadow p-4 mt-6">
-            <h2 className="text-sm font-semibold mb-4">
-                Distribuição de Gastos
-            </h2>
-
+        <div>
             <div className="w-full h-64">
                 <ResponsiveContainer>
                     <PieChart>

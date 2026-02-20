@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
+import { Metadata } from "next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,12 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Controle Financeiro",
-  description: "Gerencie seus gastos e metas",
-  manifest: "/manifest.json",
-  themeColor: "#6366F1",
-  icons: {
-    icon: "/favicon.svg",
-  },
+  description: "Gerencie seus gastos e metas"
 };
 
 export default function RootLayout({

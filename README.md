@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💰 Controle Financeiro
 
-## Getting Started
+Aplicação web para gerenciamento de gastos, entradas e metas
+financeiras.
 
-First, run the development server:
+Projeto desenvolvido com **Next.js + Prisma + PostgreSQL**, com
+arquitetura pronta para Docker e PWA.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+------------------------------------------------------------------------
+
+## 🚀 Funcionalidades
+
+-   ✅ Cadastro de entradas e despesas
+-   ✅ Categorias personalizadas
+-   ✅ Dashboard com resumo financeiro
+-   ✅ Metas financeiras com progresso
+-   ✅ Reservas para metas
+-   ✅ Modal de confirmação
+-   ✅ Toast de feedback
+-   ✅ Design moderno estilo super app
+-   ✅ PWA instalável
+-   ✅ Docker ready
+
+------------------------------------------------------------------------
+
+## 🧱 Tecnologias Utilizadas
+
+-   **Next.js (App Router)**
+-   **TypeScript**
+-   **Prisma ORM**
+-   **PostgreSQL**
+-   **TailwindCSS**
+-   **Lucide Icons**
+-   **Docker**
+-   **PWA (Manifest + Installable)**
+
+------------------------------------------------------------------------
+
+## 📦 Estrutura do Projeto
+
+    src/
+      app/
+      components/
+        ui/
+    prisma/
+    public/
+    Dockerfile
+    docker-compose.yml
+
+------------------------------------------------------------------------
+
+## ⚙️ Configuração Local
+
+### 1️⃣ Instalar dependências
+
+``` bash
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2️⃣ Configurar banco
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Crie um arquivo `.env`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/financeiro"
 
-## Learn More
+### 3️⃣ Rodar migrations
 
-To learn more about Next.js, take a look at the following resources:
+``` bash
+npx prisma migrate dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 4️⃣ Iniciar projeto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+``` bash
+npm run dev
+```
 
-## Deploy on Vercel
+Acesse:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+    http://localhost:3000
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+------------------------------------------------------------------------
+
+## 🐳 Rodando com Docker
+
+### Subir containers
+
+``` bash
+docker-compose up --build
+```
+
+Acesse:
+
+    http://localhost:3000
+
+### Parar containers
+
+``` bash
+docker-compose down
+```
+
+------------------------------------------------------------------------
+
+## 📱 PWA (Instalável)
+
+O projeto possui:
+
+-   `manifest.json`
+-   Ícones 192x192 e 512x512
+-   Theme color configurado
+
+Para instalar:
+
+-   Abra no Chrome
+-   Clique em "Instalar app"
+-   Ou "Adicionar à tela inicial"
+
+------------------------------------------------------------------------
+
+## 🔐 Variáveis de Ambiente
+
+  Variável       Descrição
+  -------------- ------------------------
+  DATABASE_URL   Conexão com PostgreSQL
+
+------------------------------------------------------------------------
+
+## 📌 Próximas Evoluções
+
+-   🔄 Controle por mês
+-   📊 Relatórios avançados
+-   🌙 Dark mode
+-   📈 Gráficos mais detalhados
+-   🔐 Autenticação multiusuário
+-   ☁️ Deploy cloud
+
+------------------------------------------------------------------------
+
+## 👨‍💻 Autor
+
+Projeto desenvolvido como sistema pessoal de controle financeiro e
+evolução técnica em arquitetura fullstack moderna.
+
+------------------------------------------------------------------------
+
+## 📄 Licença
+
+Uso pessoal.

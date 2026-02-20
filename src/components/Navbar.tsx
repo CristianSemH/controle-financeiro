@@ -7,7 +7,9 @@ import {
     CreditCard,
     Target,
     Tags,
+    LogOut
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 export default function Navbar() {
     const pathname = usePathname();
@@ -57,6 +59,44 @@ export default function Navbar() {
         );
     }
 
+    function NavButton({
+        icon: Icon,
+        label,
+        onClick,
+    }: {
+        icon: any;
+        label: string;
+        onClick: () => void;
+    }) {
+        return (
+            <button
+                onClick={onClick}
+                className="
+        flex flex-col items-center justify-center
+        flex-1
+        py-2
+        transition
+        text-slate-400
+      "
+            >
+                <div
+                    className="
+          flex flex-col items-center justify-center
+          px-3 py-1.5
+          rounded-xl
+          transition-all
+          hover:bg-red-100 hover:text-red-600
+        "
+                >
+                    <Icon size={20} className="opacity-70" />
+                    <span className="text-[11px] mt-1 font-medium">
+                        {label}
+                    </span>
+                </div>
+            </button>
+        );
+    }
+
     return (
         <nav
             className="
@@ -92,6 +132,11 @@ export default function Navbar() {
                 href="/categories"
                 icon={Tags}
                 label="Categorias"
+            />
+            <NavButton
+                icon={LogOut}
+                label="Sair"
+                onClick={() => signOut({ callbackUrl: "/login" })}
             />
         </nav>
     );

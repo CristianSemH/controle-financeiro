@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:15
+    container_name: financeiro_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: financeiro
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: financeiro_app
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env.production
+    command: sh -c "npx prisma migrate deploy && npx prisma generate && npm start"
+
+  tunnel_financeiro:
+    image: cloudflare/cloudflared:latest
+    container_name: tunnel_financeiro
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=TOKEN_HERE
+    depends_on:
+      - financeiro_app
+
+volumes:
+  postgres_data:
+
+

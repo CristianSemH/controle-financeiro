@@ -11,9 +11,8 @@ export default function FloatingButton() {
       onClick={() => router.push("/transactions/new")}
       className="
         fixed
-        bottom-10
-        left-1/2
-        -translate-x-1/2
+        bottom-18
+        right-6
         bg-indigo-600
         hover:bg-indigo-700
         text-white

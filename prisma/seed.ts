@@ -4,8 +4,7 @@ import bcrypt from "bcryptjs";
 
 async function main() {
 
-    CreateUser("cristianmichelb@gmail.com", "Cris@Gabe2909")
-    CreateUser("gabrielerigo97@gmail.com", "Cris@Gabe2909")
+    CreateUser("cristianmichelb@gmail.com", "123456789");
 
 }
 

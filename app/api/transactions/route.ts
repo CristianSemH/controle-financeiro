@@ -1,8 +1,10 @@
+import { getCurrentUser } from "@/src/lib/getCurrentUser";
 import { prisma } from "@/src/lib/prisma";
 import { NextRequest } from "next/server";
 
 // LISTAR
 export async function GET() {
+
     const transactions = await prisma.transaction.findMany({
         include: {
             category: true,
@@ -17,6 +19,9 @@ export async function GET() {
 
 // CRIAR
 export async function POST(req: NextRequest) {
+
+    const user = await getCurrentUser();
+
     const body = await req.json();
 
     const { description, amount, type, categoryId, date } = body;
@@ -35,6 +40,7 @@ export async function POST(req: NextRequest) {
             type,
             categoryId,
             date: new Date(date),
+            userId: user.id
         },
     });
 

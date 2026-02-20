@@ -1,3 +1,4 @@
+import { getCurrentUser } from "@/src/lib/getCurrentUser";
 import { prisma } from "@/src/lib/prisma";
 import { NextRequest } from "next/server";
 
@@ -28,6 +29,11 @@ export async function GET() {
 
 // CRIAR
 export async function POST(req: NextRequest) {
+
+
+    const user = await getCurrentUser();
+
+
     const body = await req.json();
     const { name, targetAmount, targetDate } = body;
 
@@ -43,6 +49,7 @@ export async function POST(req: NextRequest) {
             name,
             targetAmount,
             targetDate: new Date(targetDate),
+            userId: user.id
         },
     });
 

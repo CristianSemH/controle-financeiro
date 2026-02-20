@@ -3,9 +3,13 @@ import bcrypt from "bcryptjs";
 
 
 async function main() {
-    const email = "admin@financeiro.com";
-    const password = "123456";
 
+    CreateUser("cristianmichelb@gmail.com", "Cris@Gabe2909")
+    CreateUser("gabrielerigo97@gmail.com", "Cris@Gabe2909")
+
+}
+
+async function CreateUser(email: string, password: string) {
     const existing = await prisma.user.findUnique({
         where: { email },
     });
@@ -25,7 +29,7 @@ async function main() {
         },
     });
 
-    console.log("Usuário admin criado com sucesso!");
+    console.log("Usuário admin criado com sucesso! ", email);
 }
 
 main()

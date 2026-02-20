@@ -7,8 +7,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: financeiro
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -30,11 +28,9 @@ services:
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:
-      - TUNNEL_TOKEN=TOKEN_HERE
+      - TUNNEL_TOKEN=SEU_TOKEN_AQUI
     depends_on:
-      - financeiro_app
+      - app
 
 volumes:
   postgres_data:
-
-

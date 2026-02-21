@@ -6,7 +6,7 @@ export default withAuth(
     callbacks: {
       authorized: ({ req, token }) => {
         const pathname = req.nextUrl.pathname;
-        const publicRoutes = ["/login", "/cadastro"];
+        const publicRoutes = ["/login", "/login/new"];
 
         if (publicRoutes.includes(pathname)) {
           return true;

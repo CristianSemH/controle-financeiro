@@ -5,6 +5,8 @@ import { NextRequest } from "next/server";
 // LISTAR
 export async function GET() {
 
+    const user = await getCurrentUser();
+
     const transactions = await prisma.transaction.findMany({
         include: {
             category: true,
@@ -12,6 +14,9 @@ export async function GET() {
         orderBy: {
             date: "desc",
         },
+        where: {
+            userId: user.id
+        }
     });
 
     return Response.json(transactions);

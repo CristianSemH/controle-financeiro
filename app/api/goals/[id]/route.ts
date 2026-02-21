@@ -1,3 +1,4 @@
+import { getCurrentUser } from "@/src/lib/getCurrentUser";
 import { prisma } from "@/src/lib/prisma";
 import { NextRequest } from "next/server";
 
@@ -8,8 +9,10 @@ export async function GET(
 ) {
     const { id } = await context.params;
 
+    const user = await getCurrentUser();
+
     const goal = await prisma.goal.findUnique({
-        where: { id },
+        where: { id, userId: user.id },
     });
 
     if (!goal) {
@@ -26,9 +29,10 @@ export async function PUT(
 ) {
     const { id } = await context.params;
     const body = await req.json();
+    const user = await getCurrentUser();
 
     const goal = await prisma.goal.update({
-        where: { id },
+        where: { id, userId: user.id },
         data: {
             ...body,
             targetDate: body.targetDate
@@ -46,9 +50,10 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
     const { id } = await context.params;
+    const user = await getCurrentUser();
 
     await prisma.goal.delete({
-        where: { id },
+        where: { id, userId: user.id },
     });
 
     return Response.json({ message: "Meta deletada com sucesso" });

@@ -4,8 +4,12 @@ import { NextRequest } from "next/server";
 
 // LISTAR
 export async function GET() {
+
+    const user = await getCurrentUser();
+
     const categories = await prisma.category.findMany({
         orderBy: { name: "asc" },
+        where: { userId: user.id }
     });
 
     return Response.json(categories);

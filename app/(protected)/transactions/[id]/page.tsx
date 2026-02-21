@@ -16,7 +16,6 @@ export default function EditTransactionPage() {
   const { showToast } = useToast();
 
   const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
@@ -47,8 +46,6 @@ export default function EditTransactionPage() {
         categoryId: data.categoryId,
         date: data.date.split("T")[0],
       });
-
-      setLoading(false);
     }
 
     if (id) loadTransaction();
@@ -69,18 +66,6 @@ export default function EditTransactionPage() {
 
     showToast("Transação atualizada com sucesso 🎉", "success");
     router.push("/transactions");
-  }
-
-
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">
-          Carregando transação...
-        </div>
-      </div>
-    );
   }
 
   return (

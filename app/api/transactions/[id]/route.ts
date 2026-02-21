@@ -1,3 +1,4 @@
+import { getCurrentUser } from "@/src/lib/getCurrentUser";
 import { prisma } from "@/src/lib/prisma";
 import { NextRequest } from "next/server";
 
@@ -7,9 +8,10 @@ export async function GET(
     context: { params: Promise<{ id: string }> }
 ) {
     const { id } = await context.params;
+    const user = await getCurrentUser();
 
     const transaction = await prisma.transaction.findUnique({
-        where: { id },
+        where: { id, userId: user.id },
         include: { category: true },
     });
 
@@ -27,9 +29,10 @@ export async function PUT(
 ) {
     const { id } = await context.params;
     const body = await req.json();
+    const user = await getCurrentUser();
 
     const transaction = await prisma.transaction.update({
-        where: { id },
+        where: { id, userId: user.id },
         data: {
             ...body,
             date: body.date ? new Date(body.date) : undefined,
@@ -45,9 +48,10 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
     const { id } = await context.params;
+    const user = await getCurrentUser();
 
     await prisma.transaction.delete({
-        where: { id },
+        where: { id, userId: user.id },
     });
 
     return Response.json({ message: "Deletado com sucesso" });

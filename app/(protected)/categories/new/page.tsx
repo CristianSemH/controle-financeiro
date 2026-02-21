@@ -7,6 +7,7 @@ import Input from "@/src/components/ui/Input";
 import Label from "@/src/components/ui/Label";
 import Button from "@/src/components/ui/Button";
 import { useToast } from "@/src/components/ui/ToastProvider";
+import CardForm from "@/src/components/ui/CardForm";
 
 
 export default function NewCategoryPage() {
@@ -35,80 +36,68 @@ export default function NewCategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24">
 
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-800">
-          Nova Categoria
-        </h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Organize suas movimentações
-        </p>
-      </div>
+    <CardForm title="Nova Categoria" description="Crie uma nova categoria para organizar suas movimentações">
 
-      {/* Card Container */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* Toggle Tipo */}
-          <div className="flex bg-slate-100 rounded-2xl p-1">
-            <button
-              type="button"
-              onClick={() =>
-                setForm({ ...form, type: "EXPENSE" })
-              }
-              className={`flex-1 py-2 rounded-2xl text-sm font-medium transition ${form.type === "EXPENSE"
-                ? "bg-white shadow text-rose-600"
-                : "text-slate-500"
-                }`}
-            >
-              Despesa
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setForm({ ...form, type: "INCOME" })
-              }
-              className={`flex-1 py-2 rounded-2xl text-sm font-medium transition ${form.type === "INCOME"
-                ? "bg-white shadow text-emerald-600"
-                : "text-slate-500"
-                }`}
-            >
-              Entrada
-            </button>
-          </div>
-
-          {/* Nome da categoria */}
-          <div>
-            <Label>Nome da Categoria</Label>
-            <Input
-              placeholder="Ex: Alimentação, Salário..."
-              value={form.name}
-              onChange={(e) =>
-                setForm({ ...form, name: e.target.value })
-              }
-              required
-            />
-          </div>
-
-          {/* Botão */}
-          <Button type="submit" disabled={loading}>
-            {loading ? "Salvando..." : "Salvar Categoria"}
-          </Button>
-
-          <Button
-            variant="secondary"
+        {/* Toggle Tipo */}
+        <div className="flex bg-slate-100 rounded-2xl p-1">
+          <button
             type="button"
-            onClick={() => router.push("/categories")}
+            onClick={() =>
+              setForm({ ...form, type: "EXPENSE" })
+            }
+            className={`flex-1 py-2 rounded-2xl text-sm font-medium transition ${form.type === "EXPENSE"
+              ? "bg-white shadow text-rose-600"
+              : "text-slate-500"
+              }`}
           >
-            Cancelar
-          </Button>
+            Despesa
+          </button>
 
-        </form>
-      </div>
-    </div>
+          <button
+            type="button"
+            onClick={() =>
+              setForm({ ...form, type: "INCOME" })
+            }
+            className={`flex-1 py-2 rounded-2xl text-sm font-medium transition ${form.type === "INCOME"
+              ? "bg-white shadow text-emerald-600"
+              : "text-slate-500"
+              }`}
+          >
+            Entrada
+          </button>
+        </div>
+
+        {/* Nome da categoria */}
+        <div>
+          <Label>Nome da Categoria</Label>
+          <Input
+            placeholder="Ex: Alimentação, Salário..."
+            value={form.name}
+            onChange={(e) =>
+              setForm({ ...form, name: e.target.value })
+            }
+            required
+          />
+        </div>
+
+        {/* Botão */}
+        <Button type="submit" disabled={loading}>
+          {loading ? "Salvando..." : "Salvar Categoria"}
+        </Button>
+
+        <Button
+          variant="secondary"
+          type="button"
+          onClick={() => router.push("/categories")}
+        >
+          Cancelar
+        </Button>
+
+      </form>
+    </CardForm>
+
   );
 }

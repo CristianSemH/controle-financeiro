@@ -1,3 +1,4 @@
+import { getCurrentUser } from "@/src/lib/getCurrentUser";
 import { prisma } from "@/src/lib/prisma";
 import { NextRequest } from "next/server";
 
@@ -7,10 +8,12 @@ export async function GET(
     context: { params: Promise<{ id: string }> }
 ) {
 
+    const user = await getCurrentUser();
+
     const { id } = await context.params;
 
     const category = await prisma.category.findUnique({
-        where: { id },
+        where: { id, userId: user.id }
     });
 
     if (!category) {
@@ -27,10 +30,12 @@ export async function PUT(
 ) {
     const { id } = await context.params;
 
+    const user = await getCurrentUser();
+
     const body = await req.json();
 
     const category = await prisma.category.update({
-        where: { id },
+        where: { id, userId: user.id },
         data: body,
     });
 
@@ -43,10 +48,12 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
 
+    const user = await getCurrentUser();
+
     const { id } = await context.params;
 
     await prisma.category.delete({
-        where: { id },
+        where: { id, userId: user.id },
     });
 
     return Response.json({ message: "Categoria deletada com sucesso" });

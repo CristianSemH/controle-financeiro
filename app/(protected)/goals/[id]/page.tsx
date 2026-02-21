@@ -19,7 +19,6 @@ export default function EditGoalPage() {
   const params = useParams();
   const id = params.id as string;
   const { showToast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [goal, setGoal] = useState<any>(null);
 
   const [showContribution, setShowContribution] = useState(false);
@@ -35,9 +34,7 @@ export default function EditGoalPage() {
     const goals = await res.json();
     const current = goals.find((g: any) => g.id === id);
 
-
     setGoal(current);
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -95,18 +92,10 @@ export default function EditGoalPage() {
     return Math.min(progress, 100);
   }
 
-  if (loading || !goal) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-slate-400 animate-pulse">
-          Carregando meta...
-        </p>
-      </div>
-    );
-  }
-
   const progress = calculateProgress();
   const isCompleted = progress >= 100;
+
+  if (!goal) return null;
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24">

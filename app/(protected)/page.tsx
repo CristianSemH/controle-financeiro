@@ -2,8 +2,11 @@
 
 import Link from "next/link"
 import { PlusCircle } from "lucide-react"
+import { getCurrentUser } from "@/src/lib/getCurrentUser"
 
-export default function Home() {
+export default async function Home() {
+
+  const user = await getCurrentUser();
 
   return (
     <div className="min-h-screen bg-[#f8fafc] p-6">
@@ -12,7 +15,7 @@ export default function Home() {
         {/* Saudação */}
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
-            Bem-vindo de volta 👋
+            Bem-vindo de volta, {user?.name || "usuário"} 👋
           </h1>
         </div>
 

@@ -60,11 +60,15 @@ export default function ProtectedLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="bg-slate-50 text-slate-800 antialiased pb-24 h-screen">
+
         <ToastProvider>
-          {children}
+          <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24 text-gray-700">
+            {children}
+          </div>
         </ToastProvider>
         <FloatingButton />
         <Navbar />
+
       </body>
 
     </html>

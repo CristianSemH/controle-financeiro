@@ -1,7 +1,11 @@
+import { getCurrentUser } from "@/src/lib/getCurrentUser";
 import { prisma } from "@/src/lib/prisma";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
+
+  const user = await getCurrentUser();
+
   const { searchParams } = new URL(req.url);
 
   const month = Number(searchParams.get("month"));
@@ -29,12 +33,12 @@ export async function GET(req: NextRequest) {
 
   const totalIncomeAll = await prisma.transaction.aggregate({
     _sum: { amount: true },
-    where: { type: "INCOME" },
+    where: { type: "INCOME", userId: user.id },
   });
 
   const totalExpenseAll = await prisma.transaction.aggregate({
     _sum: { amount: true },
-    where: { type: "EXPENSE" },
+    where: { type: "EXPENSE", userId: user.id },
   });
 
   const totalBalance =
@@ -47,6 +51,7 @@ export async function GET(req: NextRequest) {
     _sum: { amount: true },
     where: {
       type: "INCOME",
+      userId: user.id,
       ...dateFilter,
     },
   });
@@ -55,6 +60,7 @@ export async function GET(req: NextRequest) {
     _sum: { amount: true },
     where: {
       type: "EXPENSE",
+      userId: user.id,
       ...dateFilter,
     },
   });
@@ -67,12 +73,13 @@ export async function GET(req: NextRequest) {
     by: ["categoryId"],
     where: {
       type: "EXPENSE",
+      userId: user.id,
       ...dateFilter,
     },
     _sum: { amount: true },
   });
 
-  const categories = await prisma.category.findMany();
+  const categories = await prisma.category.findMany({ where: { userId: user.id } });
 
   const formattedCategories = expensesByCategory.map((item) => {
     const category = categories.find(
@@ -88,6 +95,7 @@ export async function GET(req: NextRequest) {
   // ===== PROGRESSO DAS METAS =====
 
   const goals = await prisma.goal.findMany({
+    where: { userId: user.id },
     include: {
       contributions: true,
     },

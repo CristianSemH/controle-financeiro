@@ -4,7 +4,11 @@ import { NextRequest } from "next/server";
 
 // LISTAR
 export async function GET() {
+
+    const user = await getCurrentUser();
+
     const goals = await prisma.goal.findMany({
+        where: { userId: user.id },
         include: {
             contributions: {
                 orderBy: { createdAt: "desc" },

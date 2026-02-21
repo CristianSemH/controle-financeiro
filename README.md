@@ -1,47 +1,92 @@
 # 💰 Controle Financeiro
 
-Aplicação web para gerenciamento de gastos, entradas e metas
-financeiras.
+![Next.js](https://img.shields.io/badge/Next.js-14-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
+![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791)
+![Docker](https://img.shields.io/badge/Docker-Container-2496ED)
+![PWA](https://img.shields.io/badge/PWA-Installable-5A0FC8)
+![Status](https://img.shields.io/badge/Status-Online-success)
 
-Projeto desenvolvido com **Next.js + Prisma + PostgreSQL**, com
-arquitetura pronta para Docker e PWA.
+Aplicação web moderna para **gestão de finanças pessoais**, permitindo
+controle de gastos, entradas e metas financeiras com experiência estilo
+super app.
+
+Projeto desenvolvido com foco em:
+
+-   Arquitetura escalável
+-   Boas práticas fullstack
+-   Experiência mobile-first
+-   Preparação para produção com Docker
 
 ------------------------------------------------------------------------
 
-## 🚀 Funcionalidades
+# 🌐 Deploy em Produção
+
+A aplicação está publicada e acessível via domínio próprio:
+
+🔗 **https://financeiro.cristiansemh.com.br**
+
+## Infraestrutura
+
+-   🐧 VM Linux
+-   🐳 Docker + Docker Compose
+-   🔐 Cloudflare Tunnel
+-   🌍 Domínio personalizado
+-   🛡 SSL automático via Cloudflare
+
+Arquitetura preparada para migração futura para VPS ou ambiente cloud
+sem necessidade de alterações estruturais.
+
+------------------------------------------------------------------------
+
+# 🚀 Funcionalidades
+
+## 📊 Gestão Financeira
 
 -   ✅ Cadastro de entradas e despesas
 -   ✅ Categorias personalizadas
 -   ✅ Dashboard com resumo financeiro
--   ✅ Metas financeiras com progresso
--   ✅ Reservas para metas
+-   ✅ Controle de saldo atualizado
+-   ✅ Organização simples e intuitiva
+
+## 🎯 Metas e Planejamento
+
+-   ✅ Criação de metas financeiras
+-   ✅ Reserva de valores para metas
+-   ✅ Barra de progresso automática
+
+## 🎨 Experiência do Usuário
+
+-   ✅ Interface moderna
 -   ✅ Modal de confirmação
--   ✅ Toast de feedback
--   ✅ Design moderno estilo super app
+-   ✅ Toasts de feedback
+-   ✅ Layout responsivo
 -   ✅ PWA instalável
--   ✅ Docker ready
 
 ------------------------------------------------------------------------
 
-## 🧱 Tecnologias Utilizadas
+# 🧠 Arquitetura
 
--   **Next.js (App Router)**
--   **TypeScript**
--   **Prisma ORM**
--   **PostgreSQL**
--   **TailwindCSS**
--   **Lucide Icons**
--   **Docker**
--   **PWA (Manifest + Installable)**
+-   **Frontend:** Next.js (App Router)
+-   **Backend:** API Routes do Next.js
+-   **Banco de Dados:** PostgreSQL
+-   **ORM:** Prisma
+-   **Estilização:** TailwindCSS
+-   **Ícones:** Lucide
+-   **Containerização:** Docker
+-   **Tunnel:** Cloudflare
+-   **PWA:** Manifest + Installable
 
 ------------------------------------------------------------------------
 
-## 📦 Estrutura do Projeto
+# 📂 Estrutura do Projeto
 
     src/
       app/
       components/
         ui/
+      lib/
     prisma/
     public/
     Dockerfile
@@ -49,27 +94,29 @@ arquitetura pronta para Docker e PWA.
 
 ------------------------------------------------------------------------
 
-## ⚙️ Configuração Local
+# ⚙️ Configuração Local
 
-### 1️⃣ Instalar dependências
+## 1️⃣ Instalar dependências
 
 ``` bash
 npm install
 ```
 
-### 2️⃣ Configurar banco
+## 2️⃣ Configurar banco
 
 Crie um arquivo `.env`:
 
-    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/financeiro"
+``` env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/financeiro"
+```
 
-### 3️⃣ Rodar migrations
+## 3️⃣ Rodar migrations
 
 ``` bash
 npx prisma migrate dev
 ```
 
-### 4️⃣ Iniciar projeto
+## 4️⃣ Iniciar projeto
 
 ``` bash
 npm run dev
@@ -77,23 +124,19 @@ npm run dev
 
 Acesse:
 
-    http://localhost:3000
+http://localhost:3000
 
 ------------------------------------------------------------------------
 
-## 🐳 Rodando com Docker
+# 🐳 Executando com Docker
 
-### Subir containers
+## Subir containers
 
 ``` bash
 docker-compose up --build
 ```
 
-Acesse:
-
-    http://localhost:3000
-
-### Parar containers
+## Parar containers
 
 ``` bash
 docker-compose down
@@ -101,23 +144,7 @@ docker-compose down
 
 ------------------------------------------------------------------------
 
-## 📱 PWA (Instalável)
-
-O projeto possui:
-
--   `manifest.json`
--   Ícones 192x192 e 512x512
--   Theme color configurado
-
-Para instalar:
-
--   Abra no Chrome
--   Clique em "Instalar app"
--   Ou "Adicionar à tela inicial"
-
-------------------------------------------------------------------------
-
-## 🔐 Variáveis de Ambiente
+# 🔐 Variáveis de Ambiente
 
   Variável       Descrição
   -------------- ------------------------
@@ -125,24 +152,25 @@ Para instalar:
 
 ------------------------------------------------------------------------
 
-## 📌 Próximas Evoluções
+# 📈 Próximas Evoluções
 
 -   🔄 Controle por mês
 -   📊 Relatórios avançados
--   🌙 Dark mode
--   📈 Gráficos mais detalhados
+-   📈 Gráficos detalhados
+-   🌙 Dark Mode
 -   🔐 Autenticação multiusuário
--   ☁️ Deploy cloud
+-   ☁️ Deploy cloud estruturado
+-   📤 Exportação CSV / PDF
 
 ------------------------------------------------------------------------
 
-## 👨‍💻 Autor
+# 👨‍💻 Autor
 
-Projeto desenvolvido como sistema pessoal de controle financeiro e
-evolução técnica em arquitetura fullstack moderna.
+Desenvolvido por **Cris**\
+Programador Fullstack
 
 ------------------------------------------------------------------------
 
-## 📄 Licença
+# 📄 Licença
 
-Uso pessoal.
+Uso pessoal e educacional.

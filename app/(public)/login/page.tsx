@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -114,6 +115,16 @@ export default function LoginPage() {
             </Button>
 
           </form>
+
+          <p className="text-sm text-slate-500 text-center mt-5">
+            Ainda não tem conta?{" "}
+            <Link
+              href="/cadastro"
+              className="text-indigo-600 hover:text-indigo-700 font-medium"
+            >
+              Criar conta
+            </Link>
+          </p>
         </div>
 
         {/* Rodapé */}

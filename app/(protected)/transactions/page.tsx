@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-    ArrowDownCircle,
-    ArrowUpCircle,
     Calendar,
     Filter,
     Receipt,
@@ -302,18 +300,6 @@ export default function TransactionsPage() {
                                     return (
                                         <CardItemList key={transaction.id}>
                                             <div className="flex items-center gap-2">
-                                                {isIncome ? (
-                                                    <ArrowUpCircle
-                                                        size={18}
-                                                        className="text-emerald-600"
-                                                    />
-                                                ) : (
-                                                    <ArrowDownCircle
-                                                        size={18}
-                                                        className="text-rose-600"
-                                                    />
-                                                )}
-
                                                 <InfoItemListEntryExit
                                                     type={isIncome ? "entry" : "exit"}
                                                     tittle={transaction.description}
@@ -330,16 +316,6 @@ export default function TransactionsPage() {
                                                 >
                                                     {isIncome ? "+" : "-"} R${" "}
                                                     {Number(transaction.amount).toFixed(2)}
-                                                </p>
-
-                                                <p className="text-xs text-gray-400 mt-1">
-                                                    {new Date(transaction.date).toLocaleTimeString(
-                                                        "pt-BR",
-                                                        {
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                        }
-                                                    )}
                                                 </p>
 
                                                 <div className="mt-2">

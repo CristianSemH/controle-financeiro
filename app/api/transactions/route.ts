@@ -3,9 +3,27 @@ import { prisma } from "@/src/lib/prisma";
 import { NextRequest } from "next/server";
 
 // LISTAR
-export async function GET() {
+export async function GET(req: NextRequest) {
 
     const user = await getCurrentUser();
+
+    const { searchParams } = new URL(req.url);
+
+    const monthYear = searchParams.get("monthYear");
+    const type = searchParams.get("type");
+    const categoryId = searchParams.get("categoryId");
+
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
+    if (monthYear) {
+        const [year, month] = monthYear.split("-").map(Number);
+
+        if (!Number.isNaN(year) && !Number.isNaN(month)) {
+            startDate = new Date(year, month - 1, 1);
+            endDate = new Date(year, month, 0, 23, 59, 59, 999);
+        }
+    }
 
     const transactions = await prisma.transaction.findMany({
         include: {
@@ -15,7 +33,17 @@ export async function GET() {
             date: "desc",
         },
         where: {
-            userId: user.id
+            userId: user.id,
+            ...(startDate && endDate
+                ? {
+                    date: {
+                        gte: startDate,
+                        lte: endDate,
+                    },
+                }
+                : {}),
+            ...(type && type !== "ALL" ? { type: type === "INCOME" ? "INCOME" : "EXPENSE" } : {}),
+            ...(categoryId && categoryId !== "ALL" ? { categoryId } : {}),
         }
     });
 

@@ -62,6 +62,13 @@ export default function TransactionsPage() {
     }, [transactions]);
 
     const groupedTransactions = useMemo(() => {
+        const parseDateWithoutTimezoneShift = (value: string) => {
+            const dateOnly = value.split("T")[0];
+            const [year, month, day] = dateOnly.split("-").map(Number);
+
+            return new Date(year, month - 1, day);
+        };
+
         const groupedByMonth = new Map<
             string,
             {
@@ -71,7 +78,7 @@ export default function TransactionsPage() {
         >();
 
         transactions.forEach((transaction) => {
-            const date = new Date(transaction.date);
+            const date = parseDateWithoutTimezoneShift(transaction.date);
             const monthKey = `${date.getFullYear()}-${String(
                 date.getMonth() + 1
             ).padStart(2, "0")}`;
@@ -109,15 +116,14 @@ export default function TransactionsPage() {
                     .sort((a, b) => b[0].localeCompare(a[0]))
                     .map(([dayKey, dayTransactions]) => ({
                         dayKey,
-                        dayLabel: new Date(dayTransactions[0].date).toLocaleDateString(
-                            "pt-BR",
-                            {
-                                weekday: "long",
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                            }
-                        ),
+                        dayLabel: parseDateWithoutTimezoneShift(
+                            dayTransactions[0].date
+                        ).toLocaleDateString("pt-BR", {
+                            weekday: "long",
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                        }),
                         transactions: dayTransactions,
                     })),
             }));

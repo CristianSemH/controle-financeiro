@@ -21,9 +21,16 @@ type Transaction = {
     amount: number;
     type: "INCOME" | "EXPENSE";
     date: string;
+    purchaseDate?: string | null;
+    paymentMethod?: "CREDIT" | "DEBIT" | "PIX" | "CASH" | null;
     category?: {
         id: string;
         name: string;
+    } | null;
+    card?: {
+        id: string;
+        name: string;
+        dueDay: number;
     } | null;
 };
 
@@ -44,6 +51,7 @@ export default function TransactionsPage() {
     const [selectedMonthYear, setSelectedMonthYear] = useState(
         `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
     );
+    const [selectedPurchaseMonthYear, setSelectedPurchaseMonthYear] = useState("");
     const [selectedType, setSelectedType] = useState("ALL");
     const [selectedCategory, setSelectedCategory] = useState("ALL");
 
@@ -151,6 +159,10 @@ export default function TransactionsPage() {
         async function loadTransactions() {
             const params = new URLSearchParams({ monthYear: selectedMonthYear });
 
+            if (selectedPurchaseMonthYear) {
+                params.set("purchaseMonthYear", selectedPurchaseMonthYear);
+            }
+
             if (selectedType !== "ALL") {
                 params.set("type", selectedType);
             }
@@ -171,12 +183,16 @@ export default function TransactionsPage() {
         return () => {
             isMounted = false;
         };
-    }, [selectedMonthYear, selectedType, selectedCategory]);
+    }, [selectedMonthYear, selectedPurchaseMonthYear, selectedType, selectedCategory]);
 
     async function confirmDelete() {
         if (!deleteId) return;
 
         const params = new URLSearchParams({ monthYear: selectedMonthYear });
+
+        if (selectedPurchaseMonthYear) {
+            params.set("purchaseMonthYear", selectedPurchaseMonthYear);
+        }
 
         if (selectedType !== "ALL") {
             params.set("type", selectedType);
@@ -200,14 +216,14 @@ export default function TransactionsPage() {
     return (
         <>
             <HearderList
-                title="Transações"
-                description="Visualize, filtre e gerencie todas as suas movimentações"
+                title="Transacoes"
+                description="Visualize, filtre e gerencie todas as suas movimentacoes"
                 link="/transactions/new"
             />
 
             <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-3xl shadow-xl p-6 md:p-8 flex items-center justify-between gap-4 mb-6">
                 <div>
-                    <p className="text-sm opacity-80">Saldo total do período filtrado</p>
+                    <p className="text-sm opacity-80">Saldo total do periodo filtrado</p>
                     <p className="text-3xl md:text-4xl font-bold mt-2">
                         R$ {totalBalance.toFixed(2)}
                     </p>
@@ -221,18 +237,30 @@ export default function TransactionsPage() {
             <div className="bg-white rounded-2xl shadow-sm border p-4 md:p-5 mb-6">
                 <div className="flex items-center gap-2 mb-4 text-gray-700">
                     <Filter size={16} />
-                    <h2 className="text-sm font-semibold">Filtros de movimentações</h2>
+                    <h2 className="text-sm font-semibold">Filtros de movimentacoes</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div className="space-y-1">
                         <label className="text-xs text-gray-500 flex items-center gap-1">
-                            <Calendar size={13} /> Mês/Ano
+                            <Calendar size={13} /> Mes/Ano Pagamento
                         </label>
                         <input
                             type="month"
                             value={selectedMonthYear}
                             onChange={(e) => setSelectedMonthYear(e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs text-gray-500 flex items-center gap-1">
+                            <Calendar size={13} /> Mes/Ano Compra
+                        </label>
+                        <input
+                            type="month"
+                            value={selectedPurchaseMonthYear}
+                            onChange={(e) => setSelectedPurchaseMonthYear(e.target.value)}
                             className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
@@ -250,7 +278,7 @@ export default function TransactionsPage() {
                         >
                             <option value="ALL">Todos</option>
                             <option value="INCOME">Entradas</option>
-                            <option value="EXPENSE">Saídas</option>
+                            <option value="EXPENSE">Saidas</option>
                         </select>
                     </div>
 
@@ -274,7 +302,7 @@ export default function TransactionsPage() {
 
             {transactions.length === 0 && (
                 <CardListEmpty
-                    message="Nenhuma transação encontrada para os filtros selecionados."
+                    message="Nenhuma transacao encontrada para os filtros selecionados."
                     icon={<Receipt className="mx-auto text-slate-300 mb-3" size={28} />}
                 />
             )}
@@ -294,17 +322,47 @@ export default function TransactionsPage() {
 
                                 {dayGroup.transactions.map((transaction) => {
                                     const isIncome = transaction.type === "INCOME";
-                                    const description = `${isIncome ? "Entrada" : "Saída"} • ${transaction.category?.name || "Sem categoria"
-                                        }`;
+                                    const description = `${isIncome ? "Entrada" : "Saida"} - ${transaction.category?.name || "Sem categoria"}`;
+
+                                    const paymentMethodLabel =
+                                        transaction.paymentMethod === "CREDIT"
+                                            ? "Credito"
+                                            : transaction.paymentMethod === "DEBIT"
+                                                ? "Debito"
+                                                : transaction.paymentMethod === "PIX"
+                                                    ? "Pix"
+                                                    : transaction.paymentMethod === "CASH"
+                                                        ? "Dinheiro"
+                                                        : null;
 
                                     return (
                                         <CardItemList key={transaction.id}>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-col gap-2">
                                                 <InfoItemListEntryExit
                                                     type={isIncome ? "entry" : "exit"}
                                                     tittle={transaction.description}
                                                     description={description}
                                                 />
+
+                                                <div className="flex flex-wrap gap-2 pl-12">
+                                                    {paymentMethodLabel && (
+                                                        <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600">
+                                                            {paymentMethodLabel}
+                                                        </span>
+                                                    )}
+
+                                                    {transaction.paymentMethod === "CREDIT" && transaction.card?.name && (
+                                                        <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-indigo-100 text-indigo-700">
+                                                            {transaction.card.name}
+                                                        </span>
+                                                    )}
+
+                                                    {transaction.paymentMethod === "CREDIT" && transaction.card?.dueDay && (
+                                                        <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+                                                            Vence dia {transaction.card.dueDay}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className="text-right">
@@ -342,8 +400,8 @@ export default function TransactionsPage() {
 
             <ConfirmModal
                 open={!!deleteId}
-                title="Excluir Transação"
-                description="Essa ação não poderá ser desfeita."
+                title="Excluir Transacao"
+                description="Essa acao nao podera ser desfeita."
                 confirmText="Excluir"
                 cancelText="Cancelar"
                 onConfirm={confirmDelete}

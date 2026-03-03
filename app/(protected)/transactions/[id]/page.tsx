@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 
 import Input from "@/src/components/ui/Input";
@@ -9,6 +9,22 @@ import Label from "@/src/components/ui/Label";
 import Button from "@/src/components/ui/Button";
 import { useToast } from "@/src/components/ui/ToastProvider";
 
+type Card = {
+  id: string;
+  name: string;
+  dueDay: number;
+};
+
+function calculateCreditDueDate(purchaseDate: string, dueDay: number) {
+  const [year, month] = purchaseDate.split("-").map(Number);
+  const dueMonth = month === 12 ? 1 : month + 1;
+  const dueYear = month === 12 ? year + 1 : year;
+  const maxDay = new Date(dueYear, dueMonth, 0).getDate();
+  const clampedDueDay = Math.min(dueDay, maxDay);
+
+  return `${dueYear}-${String(dueMonth).padStart(2, "0")}-${String(clampedDueDay).padStart(2, "0")}`;
+}
+
 export default function EditTransactionPage() {
   const router = useRouter();
   const params = useParams();
@@ -16,6 +32,7 @@ export default function EditTransactionPage() {
   const { showToast } = useToast();
 
   const [categories, setCategories] = useState<any[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
@@ -24,16 +41,28 @@ export default function EditTransactionPage() {
     type: "EXPENSE",
     categoryId: "",
     date: "",
+    purchaseDate: "",
+    paymentMethod: "",
+    cardId: "",
   });
 
-  // Carregar categorias
+  const selectedCard = useMemo(
+    () => cards.find((card) => card.id === form.cardId),
+    [cards, form.cardId]
+  );
+
+  const isCreditExpense = form.type === "EXPENSE" && form.paymentMethod === "CREDIT";
+
   useEffect(() => {
     fetch("/api/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data));
+
+    fetch("/api/cards")
+      .then((res) => res.json())
+      .then((data) => setCards(data));
   }, []);
 
-  // Carregar dados da transação
   useEffect(() => {
     async function loadTransaction() {
       const res = await fetch(`/api/transactions/${id}`);
@@ -41,15 +70,29 @@ export default function EditTransactionPage() {
 
       setForm({
         description: data.description,
-        amount: data.amount,
+        amount: String(data.amount),
         type: data.type,
         categoryId: data.categoryId,
         date: data.date.split("T")[0],
+        purchaseDate: data.purchaseDate ? data.purchaseDate.split("T")[0] : "",
+        paymentMethod: data.paymentMethod ?? "",
+        cardId: data.cardId ?? "",
       });
     }
 
     if (id) loadTransaction();
   }, [id]);
+
+  useEffect(() => {
+    if (!isCreditExpense || !form.purchaseDate || !selectedCard) return;
+
+    const calculatedDate = calculateCreditDueDate(form.purchaseDate, selectedCard.dueDay);
+
+    setForm((prev) => {
+      if (prev.date === calculatedDate) return prev;
+      return { ...prev, date: calculatedDate };
+    });
+  }, [isCreditExpense, form.purchaseDate, selectedCard]);
 
   async function handleSubmit(e: any) {
     e.preventDefault();
@@ -61,32 +104,29 @@ export default function EditTransactionPage() {
       body: JSON.stringify({
         ...form,
         amount: Number(form.amount),
+        purchaseDate: form.type === "EXPENSE" ? form.purchaseDate : undefined,
+        paymentMethod: form.type === "EXPENSE" ? form.paymentMethod : undefined,
+        cardId: isCreditExpense ? form.cardId : undefined,
       }),
     });
 
-    showToast("Transação atualizada com sucesso 🎉", "success");
+    showToast("Transacao atualizada com sucesso", "success");
     router.push("/transactions");
   }
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24">
-
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-800">
-          Editar Transação
+          Editar Transacao
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          Atualize ou remova esta movimentação
+          Atualize ou remova esta movimentacao
         </p>
       </div>
 
-      {/* Card Container */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-
         <form onSubmit={handleSubmit} className="space-y-5">
-
-          {/* Toggle Tipo */}
           <div className="flex bg-slate-100 rounded-2xl p-1">
             <button
               type="button"
@@ -112,6 +152,9 @@ export default function EditTransactionPage() {
                   ...form,
                   type: "INCOME",
                   categoryId: "",
+                  paymentMethod: "",
+                  cardId: "",
+                  purchaseDate: "",
                 })
               }
               className={`flex-1 py-2 rounded-2xl text-sm font-medium transition ${form.type === "INCOME"
@@ -123,7 +166,6 @@ export default function EditTransactionPage() {
             </button>
           </div>
 
-          {/* Valor */}
           <div>
             <Label>Valor</Label>
             <Input
@@ -137,9 +179,8 @@ export default function EditTransactionPage() {
             />
           </div>
 
-          {/* Descrição */}
           <div>
-            <Label>Descrição</Label>
+            <Label>Descricao</Label>
             <Input
               value={form.description}
               onChange={(e) =>
@@ -152,7 +193,6 @@ export default function EditTransactionPage() {
             />
           </div>
 
-          {/* Categoria */}
           <div>
             <Label>Categoria</Label>
             <Select
@@ -177,9 +217,65 @@ export default function EditTransactionPage() {
             </Select>
           </div>
 
-          {/* Data */}
+          {form.type === "EXPENSE" && (
+            <>
+              <div>
+                <Label>Forma de Pagamento</Label>
+                <Select
+                  value={form.paymentMethod}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      paymentMethod: e.target.value,
+                      cardId: "",
+                    })
+                  }
+                  required
+                >
+                  <option value="">Selecione a forma de pagamento</option>
+                  <option value="CREDIT">Credito</option>
+                  <option value="DEBIT">Debito</option>
+                  <option value="PIX">Pix</option>
+                  <option value="CASH">Dinheiro</option>
+                </Select>
+              </div>
+
+              {isCreditExpense && (
+                <div>
+                  <Label>Cartao</Label>
+                  <Select
+                    value={form.cardId}
+                    onChange={(e) =>
+                      setForm({ ...form, cardId: e.target.value })
+                    }
+                    required
+                  >
+                    <option value="">Selecione o cartao</option>
+                    {cards.map((card) => (
+                      <option key={card.id} value={card.id}>
+                        {card.name} - vence dia {card.dueDay}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <Label>Quando eu comprei</Label>
+                <Input
+                  type="date"
+                  value={form.purchaseDate}
+                  onChange={(e) =>
+                    setForm({ ...form, purchaseDate: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </>
+          )}
+
           <div>
-            <Label>Data</Label>
+            <Label>Quando eu vou pagar</Label>
             <Input
               type="date"
               value={form.date}
@@ -190,10 +286,9 @@ export default function EditTransactionPage() {
             />
           </div>
 
-          {/* Botões */}
           <div className="pt-2 space-y-3">
             <Button type="submit" disabled={saving}>
-              {saving ? "Salvando..." : "Salvar Alterações"}
+              {saving ? "Salvando..." : "Salvar Alteracoes"}
             </Button>
 
             <Button
@@ -204,7 +299,6 @@ export default function EditTransactionPage() {
               Cancelar
             </Button>
           </div>
-
         </form>
       </div>
     </div>

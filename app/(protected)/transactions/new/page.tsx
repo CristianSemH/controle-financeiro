@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Input from "@/src/components/ui/Input";
@@ -9,10 +9,27 @@ import Label from "@/src/components/ui/Label";
 import Button from "@/src/components/ui/Button";
 import { useToast } from "@/src/components/ui/ToastProvider";
 
+type Card = {
+    id: string;
+    name: string;
+    dueDay: number;
+};
+
+function calculateCreditDueDate(purchaseDate: string, dueDay: number) {
+    const [year, month] = purchaseDate.split("-").map(Number);
+    const dueMonth = month === 12 ? 1 : month + 1;
+    const dueYear = month === 12 ? year + 1 : year;
+    const maxDay = new Date(dueYear, dueMonth, 0).getDate();
+    const clampedDueDay = Math.min(dueDay, maxDay);
+
+    return `${dueYear}-${String(dueMonth).padStart(2, "0")}-${String(clampedDueDay).padStart(2, "0")}`;
+}
+
 export default function NewTransactionPage() {
     const router = useRouter();
     const { showToast } = useToast();
     const [categories, setCategories] = useState<any[]>([]);
+    const [cards, setCards] = useState<Card[]>([]);
     const [loading, setLoading] = useState(false);
 
     const [form, setForm] = useState({
@@ -21,13 +38,38 @@ export default function NewTransactionPage() {
         type: "EXPENSE",
         categoryId: "",
         date: "",
+        purchaseDate: "",
+        paymentMethod: "",
+        cardId: "",
     });
+
+    const selectedCard = useMemo(
+        () => cards.find((card) => card.id === form.cardId),
+        [cards, form.cardId]
+    );
+
+    const isCreditExpense = form.type === "EXPENSE" && form.paymentMethod === "CREDIT";
 
     useEffect(() => {
         fetch("/api/categories")
             .then((res) => res.json())
             .then((data) => setCategories(data));
+
+        fetch("/api/cards")
+            .then((res) => res.json())
+            .then((data) => setCards(data));
     }, []);
+
+    useEffect(() => {
+        if (!isCreditExpense || !form.purchaseDate || !selectedCard) return;
+
+        const calculatedDate = calculateCreditDueDate(form.purchaseDate, selectedCard.dueDay);
+
+        setForm((prev) => {
+            if (prev.date === calculatedDate) return prev;
+            return { ...prev, date: calculatedDate };
+        });
+    }, [isCreditExpense, form.purchaseDate, selectedCard]);
 
     async function handleSubmit(e: any) {
         e.preventDefault();
@@ -39,37 +81,38 @@ export default function NewTransactionPage() {
             body: JSON.stringify({
                 ...form,
                 amount: Number(form.amount),
+                purchaseDate: form.type === "EXPENSE" ? form.purchaseDate : undefined,
+                paymentMethod: form.type === "EXPENSE" ? form.paymentMethod : undefined,
+                cardId: isCreditExpense ? form.cardId : undefined,
             }),
         });
 
-        showToast("Transação criada com sucesso 🎉", "success");
+        showToast("Transacao criada com sucesso", "success");
         router.push("/transactions");
     }
 
     return (
         <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24">
-
-            {/* Header */}
             <div className="mb-6">
                 <h1 className="text-2xl font-semibold text-slate-800">
-                    Nova Transação
+                    Nova Transacao
                 </h1>
                 <p className="text-sm text-slate-400 mt-1">
-                    Registre uma nova movimentação
+                    Registre uma nova movimentacao
                 </p>
             </div>
 
-            {/* Card Container */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-
                 <form onSubmit={handleSubmit} className="space-y-5">
-
-                    {/* Toggle Tipo */}
                     <div className="flex bg-slate-100 rounded-2xl p-1">
                         <button
                             type="button"
                             onClick={() =>
-                                setForm({ ...form, type: "EXPENSE", categoryId: "" })
+                                setForm({
+                                    ...form,
+                                    type: "EXPENSE",
+                                    categoryId: "",
+                                })
                             }
                             className={`flex-1 py-2 rounded-2xl text-sm font-medium transition ${form.type === "EXPENSE"
                                 ? "bg-white shadow text-rose-600"
@@ -82,7 +125,14 @@ export default function NewTransactionPage() {
                         <button
                             type="button"
                             onClick={() =>
-                                setForm({ ...form, type: "INCOME", categoryId: "" })
+                                setForm({
+                                    ...form,
+                                    type: "INCOME",
+                                    categoryId: "",
+                                    paymentMethod: "",
+                                    cardId: "",
+                                    purchaseDate: "",
+                                })
                             }
                             className={`flex-1 py-2 rounded-2xl text-sm font-medium transition ${form.type === "INCOME"
                                 ? "bg-white shadow text-emerald-600"
@@ -93,7 +143,6 @@ export default function NewTransactionPage() {
                         </button>
                     </div>
 
-                    {/* Valor */}
                     <div>
                         <Label>Valor</Label>
                         <Input
@@ -108,11 +157,10 @@ export default function NewTransactionPage() {
                         />
                     </div>
 
-                    {/* Descrição */}
                     <div>
-                        <Label>Descrição</Label>
+                        <Label>Descricao</Label>
                         <Input
-                            placeholder="Ex: Mercado, Salário..."
+                            placeholder="Ex: Mercado, Salario..."
                             value={form.description}
                             onChange={(e) =>
                                 setForm({ ...form, description: e.target.value })
@@ -121,7 +169,6 @@ export default function NewTransactionPage() {
                         />
                     </div>
 
-                    {/* Categoria */}
                     <div>
                         <Label>Categoria</Label>
                         <Select
@@ -143,9 +190,65 @@ export default function NewTransactionPage() {
                         </Select>
                     </div>
 
-                    {/* Data */}
+                    {form.type === "EXPENSE" && (
+                        <>
+                            <div>
+                                <Label>Forma de Pagamento</Label>
+                                <Select
+                                    value={form.paymentMethod}
+                                    onChange={(e) =>
+                                        setForm({
+                                            ...form,
+                                            paymentMethod: e.target.value,
+                                            cardId: "",
+                                        })
+                                    }
+                                    required
+                                >
+                                    <option value="">Selecione a forma de pagamento</option>
+                                    <option value="CREDIT">Credito</option>
+                                    <option value="DEBIT">Debito</option>
+                                    <option value="PIX">Pix</option>
+                                    <option value="CASH">Dinheiro</option>
+                                </Select>
+                            </div>
+
+                            {isCreditExpense && (
+                                <div>
+                                    <Label>Cartao</Label>
+                                    <Select
+                                        value={form.cardId}
+                                        onChange={(e) =>
+                                            setForm({ ...form, cardId: e.target.value })
+                                        }
+                                        required
+                                    >
+                                        <option value="">Selecione o cartao</option>
+                                        {cards.map((card) => (
+                                            <option key={card.id} value={card.id}>
+                                                {card.name} - vence dia {card.dueDay}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </div>
+                            )}
+
+                            <div>
+                                <Label>Quando eu comprei</Label>
+                                <Input
+                                    type="date"
+                                    value={form.purchaseDate}
+                                    onChange={(e) =>
+                                        setForm({ ...form, purchaseDate: e.target.value })
+                                    }
+                                    required
+                                />
+                            </div>
+                        </>
+                    )}
+
                     <div>
-                        <Label>Data</Label>
+                        <Label>Quando eu vou pagar</Label>
                         <Input
                             type="date"
                             value={form.date}
@@ -156,9 +259,8 @@ export default function NewTransactionPage() {
                         />
                     </div>
 
-                    {/* Botão */}
                     <Button type="submit" disabled={loading}>
-                        {loading ? "Salvando..." : "Salvar Transação"}
+                        {loading ? "Salvando..." : "Salvar Transacao"}
                     </Button>
 
                     <Button
@@ -168,7 +270,6 @@ export default function NewTransactionPage() {
                     >
                         Cancelar
                     </Button>
-
                 </form>
             </div>
         </div>

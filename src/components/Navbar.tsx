@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
     Home,
     CreditCard,
+    Wallet,
     Target,
     Tags,
     LogOut
@@ -120,6 +121,12 @@ export default function Navbar() {
                 href="/transactions"
                 icon={CreditCard}
                 label="Mov."
+            />
+
+            <NavItem
+                href="/cards"
+                icon={Wallet}
+                label="Cartoes"
             />
 
             <NavItem

@@ -19,6 +19,8 @@ model Transaction {
   amount      Float
   type        TransactionType
   date        DateTime
+  purchaseDate DateTime?
+  paymentMethod PaymentMethod?
   createdAt   DateTime @default(now())
 
   userId      String
@@ -26,6 +28,9 @@ model Transaction {
 
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id])
+
+  cardId      String?
+  card        Card? @relation(fields: [cardId], references: [id])
 }
 
 model Category {
@@ -60,10 +65,31 @@ model GoalContribution {
   createdAt DateTime @default(now())
 }
 
+model Card {
+  id        String   @id @default(uuid())
+  name      String
+  dueDay    Int
+  limit     Float
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+
+  @@index([userId])
+}
+
 
 enum TransactionType {
   INCOME
   EXPENSE
+}
+
+enum PaymentMethod {
+  CREDIT
+  DEBIT
+  PIX
+  CASH
 }
 
 model User {
@@ -76,4 +102,5 @@ model User {
   transactions  Transaction[]
   categories    Category[]
   goals         Goal[]
+  cards         Card[]
 }

@@ -40,11 +40,17 @@ type Category = {
     type: "INCOME" | "EXPENSE";
 };
 
+type Card = {
+    id: string,
+    name: string
+}
+
 export default function TransactionsPage() {
     const router = useRouter();
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [cards, setCards] = useState<Card[]>([])
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const now = new Date();
@@ -54,6 +60,7 @@ export default function TransactionsPage() {
     const [selectedPurchaseMonthYear, setSelectedPurchaseMonthYear] = useState("");
     const [selectedType, setSelectedType] = useState("ALL");
     const [selectedCategory, setSelectedCategory] = useState("ALL");
+    const [selectedCard, setSelectedCard] = useState("ALL");
 
     const availableCategories = useMemo(() => {
         if (selectedType === "ALL") return categories;
@@ -146,7 +153,16 @@ export default function TransactionsPage() {
             setCategories(categoriesData);
         }
 
+        async function loadCards() {
+            const cardsRes = await fetch("/api/cards");
+            const cardsData = await cardsRes.json();
+
+            if (!isMounted) return;
+            setCards(cardsData);
+        }
+
         void loadCategories();
+        void loadCards();
 
         return () => {
             isMounted = false;
@@ -171,6 +187,10 @@ export default function TransactionsPage() {
                 params.set("categoryId", selectedCategory);
             }
 
+            if (selectedCard !== "ALL") {
+                params.set("cardId", selectedCard);
+            }
+
             const res = await fetch(`/api/transactions?${params.toString()}`);
             const data = await res.json();
 
@@ -183,7 +203,7 @@ export default function TransactionsPage() {
         return () => {
             isMounted = false;
         };
-    }, [selectedMonthYear, selectedPurchaseMonthYear, selectedType, selectedCategory]);
+    }, [selectedMonthYear, selectedPurchaseMonthYear, selectedType, selectedCategory, selectedCard]);
 
     async function confirmDelete() {
         if (!deleteId) return;
@@ -240,7 +260,7 @@ export default function TransactionsPage() {
                     <h2 className="text-sm font-semibold">Filtros de movimentacoes</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                     <div className="space-y-1">
                         <label className="text-xs text-gray-500 flex items-center gap-1">
                             <Calendar size={13} /> Mes/Ano Pagamento
@@ -293,6 +313,22 @@ export default function TransactionsPage() {
                             {availableCategories.map((category) => (
                                 <option key={category.id} value={category.id}>
                                     {category.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs text-gray-500">Cartão</label>
+                        <select
+                            value={selectedCard}
+                            onChange={(e) => setSelectedCard(e.target.value)}
+                            className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="ALL">Todas</option>
+                            {cards.map((card) => (
+                                <option key={card.id} value={card.id}>
+                                    {card.name}
                                 </option>
                             ))}
                         </select>

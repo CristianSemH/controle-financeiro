@@ -75,13 +75,15 @@ export default function NewTransactionPage() {
         e.preventDefault();
         setLoading(true);
 
+        const purchaseDate = form.type === "EXPENSE" ? isCreditExpense ? form.purchaseDate : form.date : undefined
+
         await fetch("/api/transactions", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 ...form,
                 amount: Number(form.amount),
-                purchaseDate: form.type === "EXPENSE" ? form.purchaseDate : undefined,
+                purchaseDate: purchaseDate,
                 paymentMethod: form.type === "EXPENSE" ? form.paymentMethod : undefined,
                 cardId: isCreditExpense ? form.cardId : undefined,
             }),
@@ -214,41 +216,46 @@ export default function NewTransactionPage() {
                             </div>
 
                             {isCreditExpense && (
-                                <div>
-                                    <Label>Cartao</Label>
-                                    <Select
-                                        value={form.cardId}
-                                        onChange={(e) =>
-                                            setForm({ ...form, cardId: e.target.value })
-                                        }
-                                        required
-                                    >
-                                        <option value="">Selecione o cartao</option>
-                                        {cards.map((card) => (
-                                            <option key={card.id} value={card.id}>
-                                                {card.name} - vence dia {card.dueDay}
-                                            </option>
-                                        ))}
-                                    </Select>
-                                </div>
-                            )}
+                                <>
+                                    <div>
+                                        <Label>Cartao</Label>
+                                        <Select
+                                            value={form.cardId}
+                                            onChange={(e) =>
+                                                setForm({ ...form, cardId: e.target.value })
+                                            }
+                                            required
+                                        >
+                                            <option value="">Selecione o cartao</option>
+                                            {cards.map((card) => (
+                                                <option key={card.id} value={card.id}>
+                                                    {card.name} - vence dia {card.dueDay}
+                                                </option>
+                                            ))}
+                                        </Select>
+                                    </div>
 
-                            <div>
-                                <Label>Quando eu comprei</Label>
-                                <Input
-                                    type="date"
-                                    value={form.purchaseDate}
-                                    onChange={(e) =>
-                                        setForm({ ...form, purchaseDate: e.target.value })
-                                    }
-                                    required
-                                />
-                            </div>
+
+                                    <div>
+                                        <Label>Quando eu comprei</Label>
+                                        <Input
+                                            type="date"
+                                            value={form.purchaseDate}
+                                            onChange={(e) =>
+                                                setForm({ ...form, purchaseDate: e.target.value })
+                                            }
+                                            required
+                                        />
+                                    </div>
+                                </>
+                            )}
                         </>
                     )}
 
                     <div>
-                        <Label>Quando eu vou pagar</Label>
+                        {form.type === "EXPENSE" ?
+                            <Label>Quando eu vou pagar</Label>
+                            : <Label>Data da entrada</Label>}
                         <Input
                             type="date"
                             value={form.date}

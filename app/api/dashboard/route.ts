@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
 
   const month = Number(searchParams.get("month"));
   const year = Number(searchParams.get("year"));
+  const today = new Date();
 
   let startDate;
   let endDate;
@@ -33,12 +34,12 @@ export async function GET(req: NextRequest) {
 
   const totalIncomeAll = await prisma.transaction.aggregate({
     _sum: { amount: true },
-    where: { type: "INCOME", userId: user.id },
+    where: { type: "INCOME", userId: user.id, date: { lte: today } },
   });
 
   const totalExpenseAll = await prisma.transaction.aggregate({
     _sum: { amount: true },
-    where: { type: "EXPENSE", userId: user.id },
+    where: { type: "EXPENSE", userId: user.id, date: { lte: today } },
   });
 
   const totalBalance =

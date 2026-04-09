@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get("type");
     const categoryId = searchParams.get("categoryId");
     const cardId = searchParams.get("cardId")
+    const description = searchParams.get("description")
 
     let startDate: Date | undefined;
     let endDate: Date | undefined;
@@ -82,6 +83,10 @@ export async function GET(req: NextRequest) {
             ...(type && type !== "ALL" ? { type: type === "INCOME" ? "INCOME" : "EXPENSE" } : {}),
             ...(categoryId && categoryId !== "ALL" ? { categoryId } : {}),
             ...(cardId && cardId !== "ALL" ? { cardId } : {}),
+            description: {
+                contains: description || "",
+                mode: "insensitive"
+            }
         }
     });
 

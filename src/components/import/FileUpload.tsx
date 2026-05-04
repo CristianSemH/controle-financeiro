@@ -19,10 +19,11 @@ export type CsvImportError = {
 };
 
 type FileUploadProps = {
+    householdId: string;
     onParsed: (rows: ParsedImportRow[], errors: CsvImportError[]) => void;
 };
 
-export default function FileUpload({ onParsed }: FileUploadProps) {
+export default function FileUpload({ householdId, onParsed }: FileUploadProps) {
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [fileName, setFileName] = useState("");
     const [loading, setLoading] = useState(false);
@@ -38,6 +39,7 @@ export default function FileUpload({ onParsed }: FileUploadProps) {
 
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("householdId", householdId);
 
         try {
             const res = await fetch("/api/import/csv", {

@@ -38,12 +38,24 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          households: {
+            create: {
+              role: "OWNER",
+              household: {
+                create: {
+                  name: `${name} Household`,
+                },
+              },
+            },
+          },
+        },
+      });
     });
 
     return NextResponse.json(

@@ -9,6 +9,7 @@ import {
     Target,
     Tags,
     Upload,
+    Users,
     LogOut
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -154,6 +155,13 @@ export default function Navbar() {
                 href="/import"
                 icon={Upload}
                 label="Importar"
+                pathname={pathname}
+            />
+
+            <NavItem
+                href="/households"
+                icon={Users}
+                label="Familias"
                 pathname={pathname}
             />
             <NavButton

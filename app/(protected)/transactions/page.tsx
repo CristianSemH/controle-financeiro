@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
     Calendar,
+    Eye,
+    EyeOff,
     Filter,
     Receipt,
     Wallet,
-    EyeOff,
-    Eye
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ConfirmModal from "@/src/components/ui/ConfirmModal";
@@ -16,6 +16,14 @@ import CardListEmpty from "@/src/components/ui/CardListEmpty";
 import CardItemList from "@/src/components/ui/CardItemList";
 import InfoItemListEntryExit from "@/src/components/InfoItemListEntryExit";
 import ButtonActionList from "@/src/components/ui/ButtonActionList";
+import { useRequireHousehold } from "@/src/hooks/useRequireHousehold";
+import {
+    Category,
+    Card,
+    fetchCards,
+    fetchCategories,
+} from "@/src/services/client/financialApi";
+import { fetchTransactions } from "@/src/services/client/transactionApi";
 
 type Transaction = {
     id: string;
@@ -25,6 +33,11 @@ type Transaction = {
     date: string;
     purchaseDate?: string | null;
     paymentMethod?: "CREDIT" | "DEBIT" | "PIX" | "CASH" | null;
+    createdBy?: {
+        id: string;
+        name: string | null;
+        email: string;
+    } | null;
     category?: {
         id: string;
         name: string;
@@ -36,26 +49,16 @@ type Transaction = {
     } | null;
 };
 
-type Category = {
-    id: string;
-    name: string;
-    type: "INCOME" | "EXPENSE";
-};
-
-type Card = {
-    id: string,
-    name: string
-}
-
 export default function TransactionsPage() {
     const router = useRouter();
-
+    const { householdId, loading: householdLoading } = useRequireHousehold();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
-    const [cards, setCards] = useState<Card[]>([])
+    const [cards, setCards] = useState<Card[]>([]);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
-    const [countFilter, setCountFilter] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     const now = new Date();
     const [selectedMonthYear, setSelectedMonthYear] = useState(
@@ -66,6 +69,16 @@ export default function TransactionsPage() {
     const [selectedCategory, setSelectedCategory] = useState("ALL");
     const [selectedCard, setSelectedCard] = useState("ALL");
     const [description, setDescription] = useState("");
+
+    const activeFilterCount = useMemo(() => {
+        return [
+            selectedPurchaseMonthYear,
+            selectedType !== "ALL",
+            selectedCategory !== "ALL",
+            selectedCard !== "ALL",
+            description.trim(),
+        ].filter(Boolean).length;
+    }, [description, selectedCard, selectedCategory, selectedPurchaseMonthYear, selectedType]);
 
     const availableCategories = useMemo(() => {
         if (selectedType === "ALL") return categories;
@@ -104,7 +117,6 @@ export default function TransactionsPage() {
                 month: "long",
                 year: "numeric",
             });
-
             const dayKey = `${monthKey}-${String(date.getDate()).padStart(2, "0")}`;
 
             if (!groupedByMonth.has(monthKey)) {
@@ -148,69 +160,73 @@ export default function TransactionsPage() {
     }, [transactions]);
 
     useEffect(() => {
+        if (householdLoading || !householdId) return;
+
         let isMounted = true;
+        const activeHouseholdId = householdId;
 
-        async function loadCategories() {
-            const categoriesRes = await fetch("/api/categories");
-            const categoriesData = await categoriesRes.json();
+        async function loadOptions() {
+            try {
+                const [categoriesData, cardsData] = await Promise.all([
+                    fetchCategories(activeHouseholdId),
+                    fetchCards(activeHouseholdId),
+                ]);
 
-            if (!isMounted) return;
-            setCategories(categoriesData);
+                if (!isMounted) return;
+                setCategories(categoriesData);
+                setCards(cardsData);
+            } catch (currentError) {
+                if (!isMounted) return;
+                setError(
+                    currentError instanceof Error
+                        ? currentError.message
+                        : "Nao foi possivel carregar filtros"
+                );
+            }
         }
 
-        async function loadCards() {
-            const cardsRes = await fetch("/api/cards");
-            const cardsData = await cardsRes.json();
-
-            if (!isMounted) return;
-            setCards(cardsData);
-        }
-
-        void loadCategories();
-        void loadCards();
+        setSelectedCategory("ALL");
+        setSelectedCard("ALL");
+        void loadOptions();
 
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [householdId, householdLoading]);
 
     useEffect(() => {
+        if (householdLoading || !householdId) return;
+
         let isMounted = true;
+        const activeHouseholdId = householdId;
 
         async function loadTransactions() {
-            const params = new URLSearchParams({ monthYear: selectedMonthYear });
-            setCountFilter(0);
+            setLoading(true);
+            setError("");
 
-            if (selectedPurchaseMonthYear) {
-                params.set("purchaseMonthYear", selectedPurchaseMonthYear);
-                setCountFilter(countFilter + 1);
+            try {
+                const data = await fetchTransactions<Transaction[]>({
+                    householdId: activeHouseholdId,
+                    monthYear: selectedMonthYear,
+                    purchaseMonthYear: selectedPurchaseMonthYear,
+                    type: selectedType,
+                    categoryId: selectedCategory,
+                    cardId: selectedCard,
+                    description: description.trim(),
+                });
+
+                if (!isMounted) return;
+                setTransactions(data);
+            } catch (currentError) {
+                if (!isMounted) return;
+                setError(
+                    currentError instanceof Error
+                        ? currentError.message
+                        : "Nao foi possivel carregar transacoes"
+                );
+            } finally {
+                if (isMounted) setLoading(false);
             }
-
-            if (selectedType !== "ALL") {
-                params.set("type", selectedType);
-                setCountFilter(countFilter + 1);
-            }
-
-            if (selectedCategory !== "ALL") {
-                params.set("categoryId", selectedCategory);
-                setCountFilter(countFilter + 1);
-            }
-
-            if (selectedCard !== "ALL") {
-                params.set("cardId", selectedCard);
-                setCountFilter(countFilter + 1);
-            }
-
-            if (description !== "") {
-                params.set("description", description);
-                setCountFilter(countFilter + 1);
-            }
-
-            const res = await fetch(`/api/transactions?${params.toString()}`);
-            const data = await res.json();
-
-            if (!isMounted) return;
-            setTransactions(data);
         }
 
         void loadTransactions();
@@ -218,48 +234,44 @@ export default function TransactionsPage() {
         return () => {
             isMounted = false;
         };
-    }, [selectedMonthYear, selectedPurchaseMonthYear, selectedType, selectedCategory, selectedCard, description]);
+    }, [
+        description,
+        householdId,
+        householdLoading,
+        selectedCard,
+        selectedCategory,
+        selectedMonthYear,
+        selectedPurchaseMonthYear,
+        selectedType,
+    ]);
 
     async function confirmDelete() {
-        if (!deleteId) return;
-        setCountFilter(0);
-
-        const params = new URLSearchParams({ monthYear: selectedMonthYear });
-
-        if (selectedPurchaseMonthYear) {
-            params.set("purchaseMonthYear", selectedPurchaseMonthYear);
-            setCountFilter(countFilter + 1);
-        }
-
-        if (selectedType !== "ALL") {
-            params.set("type", selectedType);
-            setCountFilter(countFilter + 1);
-        }
-
-        if (selectedCategory !== "ALL") {
-            params.set("categoryId", selectedCategory);
-            setCountFilter(countFilter + 1);
-        }
-
-        if (selectedCard !== "ALL") {
-            params.set("cardId", selectedCard);
-            setCountFilter(countFilter + 1);
-        }
-
-        if (description !== "") {
-            params.set("description", description);
-            setCountFilter(countFilter + 1);
-        }
+        if (!deleteId || !householdId) return;
 
         await fetch(`/api/transactions/${deleteId}`, {
             method: "DELETE",
         });
 
-        const res = await fetch(`/api/transactions?${params.toString()}`);
-        const data = await res.json();
+        const data = await fetchTransactions<Transaction[]>({
+            householdId,
+            monthYear: selectedMonthYear,
+            purchaseMonthYear: selectedPurchaseMonthYear,
+            type: selectedType,
+            categoryId: selectedCategory,
+            cardId: selectedCard,
+            description: description.trim(),
+        });
 
         setDeleteId(null);
         setTransactions(data);
+    }
+
+    if (householdLoading) {
+        return (
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 text-sm text-slate-500">
+                Carregando familia...
+            </div>
+        );
     }
 
     return (
@@ -269,6 +281,12 @@ export default function TransactionsPage() {
                 description="Visualize, filtre e gerencie todas as suas movimentacoes"
                 link="/transactions/new"
             />
+
+            {error && (
+                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-sm text-rose-700 mb-4">
+                    {error}
+                </div>
+            )}
 
             <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-3xl shadow-xl p-6 md:p-8 flex items-center justify-between gap-4 mb-6">
                 <div>
@@ -285,23 +303,24 @@ export default function TransactionsPage() {
 
             <div className="bg-white rounded-2xl shadow-sm border p-4 md:p-5 mb-6">
                 <div className="flex flex-col">
-                    <div
+                    <button
+                        type="button"
                         className="flex items-center justify-between mb-2 text-gray-700 cursor-pointer"
                         onClick={() => setIsOpen(!isOpen)}
                     >
                         <div className="flex items-center gap-2">
                             <Filter size={16} />
-                            <h2 className="text-sm font-semibold">Filtros de movimentações</h2>
+                            <h2 className="text-sm font-semibold">Filtros de movimentacoes</h2>
                         </div>
 
-                        <span>
-                            {isOpen ? <EyeOff size={32} /> : <Eye size={32} />}
-                        </span>
-
-
-                    </div>
+                        {isOpen ? <EyeOff size={32} /> : <Eye size={32} />}
+                    </button>
                     <div className="flex justify-end">
-                        {!isOpen && countFilter > 0 ? <span className="text-xs text-indigo-600">{countFilter} Filtros ativos</span> : null}
+                        {!isOpen && activeFilterCount > 0 ? (
+                            <span className="text-xs text-indigo-600">
+                                {activeFilterCount} Filtros ativos
+                            </span>
+                        ) : null}
                     </div>
                 </div>
 
@@ -317,7 +336,7 @@ export default function TransactionsPage() {
                             <input
                                 type="month"
                                 value={selectedMonthYear}
-                                onChange={(e) => setSelectedMonthYear(e.target.value)}
+                                onChange={(event) => setSelectedMonthYear(event.target.value)}
                                 className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
                         </div>
@@ -329,7 +348,7 @@ export default function TransactionsPage() {
                             <input
                                 type="month"
                                 value={selectedPurchaseMonthYear}
-                                onChange={(e) => setSelectedPurchaseMonthYear(e.target.value)}
+                                onChange={(event) => setSelectedPurchaseMonthYear(event.target.value)}
                                 className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
                         </div>
@@ -338,8 +357,8 @@ export default function TransactionsPage() {
                             <label className="text-xs text-gray-500">Tipo</label>
                             <select
                                 value={selectedType}
-                                onChange={(e) => {
-                                    const nextType = e.target.value;
+                                onChange={(event) => {
+                                    const nextType = event.target.value;
                                     setSelectedType(nextType);
                                     setSelectedCategory("ALL");
                                 }}
@@ -355,7 +374,7 @@ export default function TransactionsPage() {
                             <label className="text-xs text-gray-500">Categoria</label>
                             <select
                                 value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                onChange={(event) => setSelectedCategory(event.target.value)}
                                 className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             >
                                 <option value="ALL">Todas</option>
@@ -368,10 +387,10 @@ export default function TransactionsPage() {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-500">Cartão</label>
+                            <label className="text-xs text-gray-500">Cartao</label>
                             <select
                                 value={selectedCard}
-                                onChange={(e) => setSelectedCard(e.target.value)}
+                                onChange={(event) => setSelectedCard(event.target.value)}
                                 className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             >
                                 <option value="ALL">Todas</option>
@@ -384,20 +403,25 @@ export default function TransactionsPage() {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs text-gray-500">Descrição</label>
+                            <label className="text-xs text-gray-500">Descricao</label>
                             <input
                                 value={description}
-                                onChange={(e) => setDescription(e.target.value)}
+                                onChange={(event) => setDescription(event.target.value)}
                                 type="text"
                                 className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
                         </div>
                     </div>
-
                 </div>
             </div>
 
-            {transactions.length === 0 && (
+            {loading && (
+                <div className="bg-white rounded-2xl border border-slate-100 p-6 text-sm text-slate-500 mb-4">
+                    Carregando transacoes...
+                </div>
+            )}
+
+            {!loading && transactions.length === 0 && (
                 <CardListEmpty
                     message="Nenhuma transacao encontrada para os filtros selecionados."
                     icon={<Receipt className="mx-auto text-slate-300 mb-3" size={28} />}
@@ -419,7 +443,7 @@ export default function TransactionsPage() {
 
                                 {dayGroup.transactions.map((transaction) => {
                                     const isIncome = transaction.type === "INCOME";
-                                    const description = `${isIncome ? "Entrada" : "Saida"} - ${transaction.category?.name || "Sem categoria"}`;
+                                    const itemDescription = `${isIncome ? "Entrada" : "Saida"} - ${transaction.category?.name || "Sem categoria"}`;
 
                                     const paymentMethodLabel =
                                         transaction.paymentMethod === "CREDIT"
@@ -432,16 +456,25 @@ export default function TransactionsPage() {
                                                         ? "Dinheiro"
                                                         : null;
 
+                                    const createdByLabel =
+                                        transaction.createdBy?.name ||
+                                        transaction.createdBy?.email ||
+                                        "Usuario";
+
                                     return (
                                         <CardItemList key={transaction.id}>
                                             <div className="flex flex-col gap-2">
                                                 <InfoItemListEntryExit
                                                     type={isIncome ? "entry" : "exit"}
                                                     tittle={transaction.description}
-                                                    description={description}
+                                                    description={itemDescription}
                                                 />
 
                                                 <div className="flex flex-wrap gap-2 pl-12">
+                                                    <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600">
+                                                        Por: {createdByLabel}
+                                                    </span>
+
                                                     {paymentMethodLabel && (
                                                         <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600">
                                                             {paymentMethodLabel}

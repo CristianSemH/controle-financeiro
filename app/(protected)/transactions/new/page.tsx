@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Input from "@/src/components/ui/Input";
@@ -8,11 +8,24 @@ import Select from "@/src/components/ui/Select";
 import Label from "@/src/components/ui/Label";
 import Button from "@/src/components/ui/Button";
 import { useToast } from "@/src/components/ui/ToastProvider";
+import { useRequireHousehold } from "@/src/hooks/useRequireHousehold";
+import {
+    Category,
+    Card,
+    fetchCards,
+    fetchCategories,
+} from "@/src/services/client/financialApi";
+import { createTransaction } from "@/src/services/client/transactionApi";
 
-type Card = {
-    id: string;
-    name: string;
-    dueDay: number;
+type TransactionForm = {
+    description: string;
+    amount: string;
+    type: "EXPENSE" | "INCOME";
+    categoryId: string;
+    date: string;
+    purchaseDate: string;
+    paymentMethod: "" | "CREDIT" | "DEBIT" | "PIX" | "CASH";
+    cardId: string;
 };
 
 function calculateCreditDueDate(purchaseDate: string, dueDay: number) {
@@ -28,11 +41,13 @@ function calculateCreditDueDate(purchaseDate: string, dueDay: number) {
 export default function NewTransactionPage() {
     const router = useRouter();
     const { showToast } = useToast();
-    const [categories, setCategories] = useState<any[]>([]);
+    const { householdId, loading: householdLoading } = useRequireHousehold();
+    const [categories, setCategories] = useState<Category[]>([]);
     const [cards, setCards] = useState<Card[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const [form, setForm] = useState({
+    const [form, setForm] = useState<TransactionForm>({
         description: "",
         amount: "",
         type: "EXPENSE",
@@ -51,46 +66,112 @@ export default function NewTransactionPage() {
     const isCreditExpense = form.type === "EXPENSE" && form.paymentMethod === "CREDIT";
 
     useEffect(() => {
-        fetch("/api/categories")
-            .then((res) => res.json())
-            .then((data) => setCategories(data));
+        if (householdLoading || !householdId) return;
 
-        fetch("/api/cards")
-            .then((res) => res.json())
-            .then((data) => setCards(data));
-    }, []);
+        let isMounted = true;
+        const activeHouseholdId = householdId;
 
-    useEffect(() => {
-        if (!isCreditExpense || !form.purchaseDate || !selectedCard) return;
+        async function loadOptions() {
+            setError("");
 
-        const calculatedDate = calculateCreditDueDate(form.purchaseDate, selectedCard.dueDay);
+            try {
+                const [categoriesData, cardsData] = await Promise.all([
+                    fetchCategories(activeHouseholdId),
+                    fetchCards(activeHouseholdId),
+                ]);
 
-        setForm((prev) => {
-            if (prev.date === calculatedDate) return prev;
-            return { ...prev, date: calculatedDate };
-        });
-    }, [isCreditExpense, form.purchaseDate, selectedCard]);
+                if (!isMounted) return;
+                setCategories(categoriesData);
+                setCards(cardsData);
+            } catch (currentError) {
+                if (!isMounted) return;
+                setError(
+                    currentError instanceof Error
+                        ? currentError.message
+                        : "Nao foi possivel carregar categorias e cartoes"
+                );
+            }
+        }
 
-    async function handleSubmit(e: any) {
-        e.preventDefault();
+        void loadOptions();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [householdId, householdLoading]);
+
+    function updatePurchaseDate(purchaseDate: string) {
+        setForm((prev) => ({
+            ...prev,
+            purchaseDate,
+            date:
+                prev.paymentMethod === "CREDIT" && selectedCard
+                    ? calculateCreditDueDate(purchaseDate, selectedCard.dueDay)
+                    : purchaseDate,
+        }));
+    }
+
+    function updateCard(cardId: string) {
+        const card = cards.find((item) => item.id === cardId);
+
+        setForm((prev) => ({
+            ...prev,
+            cardId,
+            date:
+                prev.paymentMethod === "CREDIT" && card && prev.purchaseDate
+                    ? calculateCreditDueDate(prev.purchaseDate, card.dueDay)
+                    : prev.date,
+        }));
+    }
+
+    async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!householdId) {
+            router.replace("/create-household");
+            return;
+        }
+
         setLoading(true);
+        setError("");
 
-        const purchaseDate = form.type === "EXPENSE" ? isCreditExpense ? form.purchaseDate : form.date : undefined
+        try {
+            const purchaseDate = form.type === "EXPENSE"
+                ? isCreditExpense
+                    ? form.purchaseDate
+                    : form.date
+                : undefined;
 
-        await fetch("/api/transactions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ...form,
+            await createTransaction({
+                householdId,
+                description: form.description,
                 amount: Number(form.amount),
-                purchaseDate: purchaseDate,
+                type: form.type,
+                categoryId: form.categoryId,
+                date: form.date,
+                purchaseDate,
                 paymentMethod: form.type === "EXPENSE" ? form.paymentMethod : undefined,
                 cardId: isCreditExpense ? form.cardId : undefined,
-            }),
-        });
+            });
 
-        showToast("Transacao criada com sucesso", "success");
-        router.push("/transactions");
+            showToast("Transacao criada com sucesso", "success");
+            router.push("/transactions");
+        } catch (currentError) {
+            setError(
+                currentError instanceof Error
+                    ? currentError.message
+                    : "Nao foi possivel salvar a transacao"
+            );
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (householdLoading) {
+        return (
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 text-sm text-slate-500">
+                Carregando familia...
+            </div>
+        );
     }
 
     return (
@@ -106,6 +187,12 @@ export default function NewTransactionPage() {
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                 <form onSubmit={handleSubmit} className="space-y-5">
+                    {error && (
+                        <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-sm text-rose-700">
+                            {error}
+                        </div>
+                    )}
+
                     <div className="flex bg-slate-100 rounded-2xl p-1">
                         <button
                             type="button"
@@ -152,8 +239,8 @@ export default function NewTransactionPage() {
                             step="0.01"
                             placeholder="0,00"
                             value={form.amount}
-                            onChange={(e) =>
-                                setForm({ ...form, amount: e.target.value })
+                            onChange={(event) =>
+                                setForm({ ...form, amount: event.target.value })
                             }
                             required
                         />
@@ -164,8 +251,8 @@ export default function NewTransactionPage() {
                         <Input
                             placeholder="Ex: Mercado, Salario..."
                             value={form.description}
-                            onChange={(e) =>
-                                setForm({ ...form, description: e.target.value })
+                            onChange={(event) =>
+                                setForm({ ...form, description: event.target.value })
                             }
                             required
                         />
@@ -175,18 +262,18 @@ export default function NewTransactionPage() {
                         <Label>Categoria</Label>
                         <Select
                             value={form.categoryId}
-                            onChange={(e) =>
-                                setForm({ ...form, categoryId: e.target.value })
+                            onChange={(event) =>
+                                setForm({ ...form, categoryId: event.target.value })
                             }
                             required
                         >
                             <option value="">Selecione categoria</option>
 
                             {categories
-                                .filter((c: any) => c.type === form.type)
-                                .map((c: any) => (
-                                    <option key={c.id} value={c.id}>
-                                        {c.name}
+                                .filter((category) => category.type === form.type)
+                                .map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                        {category.name}
                                     </option>
                                 ))}
                         </Select>
@@ -198,11 +285,12 @@ export default function NewTransactionPage() {
                                 <Label>Forma de Pagamento</Label>
                                 <Select
                                     value={form.paymentMethod}
-                                    onChange={(e) =>
+                                    onChange={(event) =>
                                         setForm({
                                             ...form,
-                                            paymentMethod: e.target.value,
+                                            paymentMethod: event.target.value as TransactionForm["paymentMethod"],
                                             cardId: "",
+                                            date: form.purchaseDate || form.date,
                                         })
                                     }
                                     required
@@ -221,8 +309,8 @@ export default function NewTransactionPage() {
                                         <Label>Cartao</Label>
                                         <Select
                                             value={form.cardId}
-                                            onChange={(e) =>
-                                                setForm({ ...form, cardId: e.target.value })
+                                            onChange={(event) =>
+                                                updateCard(event.target.value)
                                             }
                                             required
                                         >
@@ -235,14 +323,13 @@ export default function NewTransactionPage() {
                                         </Select>
                                     </div>
 
-
                                     <div>
                                         <Label>Quando eu comprei</Label>
                                         <Input
                                             type="date"
                                             value={form.purchaseDate}
-                                            onChange={(e) =>
-                                                setForm({ ...form, purchaseDate: e.target.value })
+                                            onChange={(event) =>
+                                                updatePurchaseDate(event.target.value)
                                             }
                                             required
                                         />
@@ -253,14 +340,16 @@ export default function NewTransactionPage() {
                     )}
 
                     <div>
-                        {form.type === "EXPENSE" ?
+                        {form.type === "EXPENSE" ? (
                             <Label>Quando eu vou pagar</Label>
-                            : <Label>Data da entrada</Label>}
+                        ) : (
+                            <Label>Data da entrada</Label>
+                        )}
                         <Input
                             type="date"
                             value={form.date}
-                            onChange={(e) =>
-                                setForm({ ...form, date: e.target.value })
+                            onChange={(event) =>
+                                setForm({ ...form, date: event.target.value })
                             }
                             required
                         />

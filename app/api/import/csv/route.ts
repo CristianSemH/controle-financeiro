@@ -1,6 +1,10 @@
 import { parse } from "csv-parse/sync";
 import { getCurrentUser } from "@/src/lib/getCurrentUser";
 import { prisma } from "@/src/lib/prisma";
+import {
+    resolveHouseholdId,
+    serviceErrorResponse,
+} from "@/src/services/householdService";
 
 type CsvRecord = {
     date?: string;
@@ -31,99 +35,109 @@ function buildDayRange(dateOnly: string) {
 }
 
 export async function POST(req: Request) {
-    const user = await getCurrentUser();
-    const formData = await req.formData();
-    const file = formData.get("file");
-
-    if (!(file instanceof File)) {
-        return Response.json(
-            { error: "Arquivo CSV nao enviado" },
-            { status: 400 }
-        );
-    }
-
-    const content = await file.text();
-    let records: CsvRecord[];
-
     try {
-        records = parse(content, {
-            columns: true,
-            skip_empty_lines: true,
-            trim: true,
-            bom: true,
-        });
-    } catch {
-        return Response.json(
-            { error: "Nao foi possivel ler o CSV" },
-            { status: 400 }
+        const user = await getCurrentUser();
+        const formData = await req.formData();
+        const file = formData.get("file");
+        const householdIdValue = formData.get("householdId");
+        const householdId = await resolveHouseholdId(
+            user.id,
+            typeof householdIdValue === "string" ? householdIdValue : undefined
         );
-    }
 
-    const rows = [];
-    const errors = [];
-
-    for (const [index, record] of records.entries()) {
-        const rowNumber = index + 2;
-        const description = record.title?.trim() ?? "";
-        const date = record.date?.trim() ?? "";
-        const amount = Number(String(record.amount ?? "").replace(",", "."));
-
-        const rowErrors = [];
-
-        if (!description) rowErrors.push("Descricao vazia");
-        if (!isValidDateOnly(date)) rowErrors.push("Data invalida");
-        if (!Number.isFinite(amount) || amount <= 0) {
-            rowErrors.push("Valor invalido");
+        if (!(file instanceof File)) {
+            return Response.json(
+                { error: "Arquivo CSV nao enviado" },
+                { status: 400 }
+            );
         }
 
-        if (rowErrors.length > 0) {
-            errors.push({
-                rowNumber,
-                errors: rowErrors,
+        const content = await file.text();
+        let records: CsvRecord[];
+
+        try {
+            records = parse(content, {
+                columns: true,
+                skip_empty_lines: true,
+                trim: true,
+                bom: true,
             });
-            continue;
+        } catch {
+            return Response.json(
+                { error: "Nao foi possivel ler o CSV" },
+                { status: 400 }
+            );
         }
 
-        const { start, end } = buildDayRange(date);
-        const duplicate = await prisma.transaction.findFirst({
-            where: {
-                userId: user.id,
+        const rows = [];
+        const errors = [];
+
+        for (const [index, record] of records.entries()) {
+            const rowNumber = index + 2;
+            const description = record.title?.trim() ?? "";
+            const date = record.date?.trim() ?? "";
+            const amount = Number(String(record.amount ?? "").replace(",", "."));
+
+            const rowErrors = [];
+
+            if (!description) rowErrors.push("Descricao vazia");
+            if (!isValidDateOnly(date)) rowErrors.push("Data invalida");
+            if (!Number.isFinite(amount) || amount <= 0) {
+                rowErrors.push("Valor invalido");
+            }
+
+            if (rowErrors.length > 0) {
+                errors.push({
+                    rowNumber,
+                    errors: rowErrors,
+                });
+                continue;
+            }
+
+            const { start, end } = buildDayRange(date);
+            const duplicate = await prisma.transaction.findFirst({
+                where: {
+                    householdId,
+                    description,
+                    amount,
+                    OR: [
+                        {
+                            date: {
+                                gte: start,
+                                lte: end,
+                            },
+                        },
+                        {
+                            purchaseDate: {
+                                gte: start,
+                                lte: end,
+                            },
+                        },
+                    ],
+                },
+                select: {
+                    id: true,
+                },
+            });
+
+            rows.push({
+                rowNumber,
                 description,
                 amount,
-                OR: [
-                    {
-                        date: {
-                            gte: start,
-                            lte: end,
-                        },
-                    },
-                    {
-                        purchaseDate: {
-                            gte: start,
-                            lte: end,
-                        },
-                    },
-                ],
-            },
-            select: {
-                id: true,
-            },
-        });
+                date,
+                type: "EXPENSE",
+                possibleDuplicate: Boolean(duplicate),
+            });
+        }
 
-        rows.push({
-            rowNumber,
-            description,
-            amount,
-            date,
-            type: "EXPENSE",
-            possibleDuplicate: Boolean(duplicate),
+        return Response.json({
+            householdId,
+            rows,
+            errors,
+            totalRows: records.length,
+            duplicateCount: rows.filter((row) => row.possibleDuplicate).length,
         });
+    } catch (error) {
+        return serviceErrorResponse(error);
     }
-
-    return Response.json({
-        rows,
-        errors,
-        totalRows: records.length,
-        duplicateCount: rows.filter((row) => row.possibleDuplicate).length,
-    });
 }

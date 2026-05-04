@@ -1,5 +1,9 @@
 import { getCurrentUser } from "@/src/lib/getCurrentUser";
 import { prisma } from "@/src/lib/prisma";
+import {
+    assertHouseholdMember,
+    serviceErrorResponse,
+} from "@/src/services/householdService";
 import { NextRequest } from "next/server";
 
 function parseDateOnly(value: string) {
@@ -17,119 +21,185 @@ function buildCreditDueDate(purchaseDate: string, dueDay: number) {
     return new Date(dueYear, dueMonth - 1, clampedDueDay);
 }
 
-// BUSCAR POR ID
+async function getAccessibleTransaction(userId: string, id: string) {
+    const transaction = await prisma.transaction.findUnique({
+        where: { id },
+        include: {
+            category: true,
+            card: true,
+            createdBy: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+        },
+    });
+
+    if (!transaction) {
+        return null;
+    }
+
+    await assertHouseholdMember(userId, transaction.householdId);
+
+    return transaction;
+}
+
 export async function GET(
     req: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
-    const { id } = await context.params;
-    const user = await getCurrentUser();
+    try {
+        const { id } = await context.params;
+        const user = await getCurrentUser();
+        const transaction = await getAccessibleTransaction(user.id, id);
 
-    const transaction = await prisma.transaction.findUnique({
-        where: { id, userId: user.id },
-        include: { category: true, card: true },
-    });
+        if (!transaction) {
+            return Response.json({ error: "Nao encontrado" }, { status: 404 });
+        }
 
-    if (!transaction) {
-        return Response.json({ error: "Nao encontrado" }, { status: 404 });
+        return Response.json(transaction);
+    } catch (error) {
+        return serviceErrorResponse(error);
     }
-
-    return Response.json(transaction);
 }
 
-// ATUALIZAR
 export async function PUT(
     req: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
-    const { id } = await context.params;
-    const body = await req.json();
-    const user = await getCurrentUser();
+    try {
+        const { id } = await context.params;
+        const body = await req.json();
+        const user = await getCurrentUser();
+        const existingTransaction = await getAccessibleTransaction(user.id, id);
 
-    const { type, paymentMethod, purchaseDate, cardId } = body;
+        if (!existingTransaction) {
+            return Response.json({ error: "Nao encontrado" }, { status: 404 });
+        }
 
-    if (type === "EXPENSE" && !paymentMethod) {
-        return Response.json(
-            { error: "Forma de pagamento e obrigatoria para despesas" },
-            { status: 400 }
-        );
-    }
+        const { type, paymentMethod, purchaseDate, cardId, categoryId } = body;
+        const householdId = existingTransaction.householdId;
 
-    if (type === "EXPENSE" && !purchaseDate) {
-        return Response.json(
-            { error: "Data de compra e obrigatoria para despesas" },
-            { status: 400 }
-        );
-    }
-
-    let resolvedDate = body.date ? new Date(body.date) : undefined;
-    let resolvedCardId: string | null | undefined = body.cardId;
-
-    if (type === "EXPENSE" && paymentMethod === "CREDIT") {
-        if (!cardId) {
+        if (type === "EXPENSE" && !paymentMethod) {
             return Response.json(
-                { error: "Selecione um cartao para compras no credito" },
+                { error: "Forma de pagamento e obrigatoria para despesas" },
                 { status: 400 }
             );
         }
 
-        const card = await prisma.card.findUnique({
-            where: { id: cardId, userId: user.id }
-        });
-
-        if (!card) {
+        if (type === "EXPENSE" && !purchaseDate) {
             return Response.json(
-                { error: "Cartao nao encontrado" },
-                { status: 404 }
+                { error: "Data de compra e obrigatoria para despesas" },
+                { status: 400 }
             );
         }
 
-        if (!resolvedDate) {
-            resolvedDate = buildCreditDueDate(purchaseDate, card.dueDay);
+        if (categoryId) {
+            const category = await prisma.category.findFirst({
+                where: {
+                    id: categoryId,
+                    householdId,
+                },
+                select: {
+                    id: true,
+                },
+            });
+
+            if (!category) {
+                return Response.json(
+                    { error: "Categoria nao encontrada" },
+                    { status: 404 }
+                );
+            }
         }
-        resolvedCardId = card.id;
+
+        let resolvedDate = body.date ? new Date(body.date) : undefined;
+        let resolvedCardId: string | null | undefined = cardId;
+
+        if (type === "EXPENSE" && paymentMethod === "CREDIT") {
+            if (!cardId) {
+                return Response.json(
+                    { error: "Selecione um cartao para compras no credito" },
+                    { status: 400 }
+                );
+            }
+
+            const card = await prisma.card.findFirst({
+                where: {
+                    id: cardId,
+                    householdId,
+                },
+            });
+
+            if (!card) {
+                return Response.json(
+                    { error: "Cartao nao encontrado" },
+                    { status: 404 }
+                );
+            }
+
+            if (!resolvedDate) {
+                resolvedDate = buildCreditDueDate(purchaseDate, card.dueDay);
+            }
+            resolvedCardId = card.id;
+        }
+
+        if (type === "EXPENSE" && paymentMethod !== "CREDIT") {
+            resolvedCardId = null;
+        }
+
+        if (type !== "EXPENSE") {
+            resolvedCardId = null;
+        }
+
+        if (!resolvedDate) {
+            return Response.json(
+                { error: "Data de pagamento e obrigatoria" },
+                { status: 400 }
+            );
+        }
+
+        const transaction = await prisma.transaction.update({
+            where: { id },
+            data: {
+                description: body.description,
+                amount: body.amount !== undefined ? Number(body.amount) : undefined,
+                type,
+                categoryId,
+                date: resolvedDate,
+                purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
+                paymentMethod: type === "EXPENSE" ? paymentMethod : null,
+                cardId: type === "EXPENSE" ? resolvedCardId : null,
+            },
+        });
+
+        return Response.json(transaction);
+    } catch (error) {
+        return serviceErrorResponse(error);
     }
-
-    if (type === "EXPENSE" && paymentMethod !== "CREDIT") {
-        resolvedCardId = null;
-    }
-
-    if (type !== "EXPENSE") {
-        resolvedCardId = null;
-    }
-
-    if (!resolvedDate) {
-        return Response.json(
-            { error: "Data de pagamento e obrigatoria" },
-            { status: 400 }
-        );
-    }
-
-    const transaction = await prisma.transaction.update({
-        where: { id, userId: user.id },
-        data: {
-            ...body,
-            date: resolvedDate,
-            purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
-            paymentMethod: type === "EXPENSE" ? paymentMethod : null,
-            cardId: type === "EXPENSE" ? resolvedCardId : null,
-        },
-    });
-
-    return Response.json(transaction);
 }
 
-// DELETAR
 export async function DELETE(
     req: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
-    const { id } = await context.params;
-    const user = await getCurrentUser();
+    try {
+        const { id } = await context.params;
+        const user = await getCurrentUser();
+        const transaction = await getAccessibleTransaction(user.id, id);
 
-    await prisma.transaction.delete({
-        where: { id, userId: user.id },
-    });
+        if (!transaction) {
+            return Response.json({ error: "Nao encontrado" }, { status: 404 });
+        }
 
-    return Response.json({ message: "Deletado com sucesso" });
+        await prisma.transaction.delete({
+            where: { id },
+        });
+
+        return Response.json({ message: "Deletado com sucesso" });
+    } catch (error) {
+        return serviceErrorResponse(error);
+    }
 }

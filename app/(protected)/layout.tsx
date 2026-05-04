@@ -4,6 +4,8 @@ import Navbar from "@/src/components/Navbar";
 import FloatingButton from "@/src/components/FloatingButton";
 import ToastProvider from "@/src/components/ui/ToastProvider";
 import { Metadata } from "next";
+import { HouseholdProvider } from "@/src/contexts/HouseholdContext";
+import HouseholdSelector from "@/src/components/households/HouseholdSelector";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,15 +61,20 @@ export default function ProtectedLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-slate-50 text-slate-800 antialiased pb-24 h-screen">
+      <body className={`${geistSans.variable} ${geistMono.variable} bg-slate-50 text-slate-800 antialiased pb-24 h-screen`}>
 
         <ToastProvider>
-          <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24 text-gray-700">
-            {children}
-          </div>
+          <HouseholdProvider>
+            <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24 text-gray-700">
+              <div className="max-w-6xl mx-auto mb-4">
+                <HouseholdSelector />
+              </div>
+              {children}
+            </div>
+            <FloatingButton />
+            <Navbar />
+          </HouseholdProvider>
         </ToastProvider>
-        <FloatingButton />
-        <Navbar />
 
       </body>
 

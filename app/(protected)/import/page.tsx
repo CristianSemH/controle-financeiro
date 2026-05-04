@@ -7,6 +7,8 @@ import FileUpload, {
     ParsedImportRow,
 } from "@/src/components/import/FileUpload";
 import ImportWizard from "@/src/components/import/ImportWizard";
+import { useRequireHousehold } from "@/src/hooks/useRequireHousehold";
+import { fetchCards, fetchCategories } from "@/src/services/client/financialApi";
 
 type Category = {
     id: string;
@@ -21,6 +23,7 @@ type Card = {
 };
 
 export default function ImportPage() {
+    const { householdId, loading: householdLoading } = useRequireHousehold();
     const [transactions, setTransactions] = useState<ParsedImportRow[]>([]);
     const [parseErrors, setParseErrors] = useState<CsvImportError[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -29,18 +32,18 @@ export default function ImportPage() {
     const [hasParsedFile, setHasParsedFile] = useState(false);
 
     useEffect(() => {
+        if (householdLoading || !householdId) return;
+
         let isMounted = true;
+        const activeHouseholdId = householdId;
 
         async function loadOptions() {
-            try {
-                const [categoriesRes, cardsRes] = await Promise.all([
-                    fetch("/api/categories"),
-                    fetch("/api/cards"),
-                ]);
+            setLoadingOptions(true);
 
+            try {
                 const [categoriesData, cardsData] = await Promise.all([
-                    categoriesRes.json(),
-                    cardsRes.json(),
+                    fetchCategories(activeHouseholdId),
+                    fetchCards(activeHouseholdId),
                 ]);
 
                 if (!isMounted) return;
@@ -59,7 +62,7 @@ export default function ImportPage() {
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [householdId, householdLoading]);
 
     function handleParsed(rows: ParsedImportRow[], errors: CsvImportError[]) {
         setTransactions(rows);
@@ -90,12 +93,13 @@ export default function ImportPage() {
                 </div>
             </div>
 
-            {loadingOptions ? (
+            {householdLoading || loadingOptions ? (
                 <div className="bg-white rounded-2xl border border-slate-100 p-6 text-sm text-slate-500">
                     Carregando categorias e cartoes...
                 </div>
-            ) : hasParsedFile ? (
+            ) : !householdId ? null : hasParsedFile ? (
                 <ImportWizard
+                    householdId={householdId}
                     transactions={transactions}
                     parseErrors={parseErrors}
                     categories={categories}
@@ -103,7 +107,7 @@ export default function ImportPage() {
                     onReset={resetImport}
                 />
             ) : (
-                <FileUpload onParsed={handleParsed} />
+                <FileUpload householdId={householdId} onParsed={handleParsed} />
             )}
         </>
     );

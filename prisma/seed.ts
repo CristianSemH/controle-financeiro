@@ -25,6 +25,16 @@ async function CreateUser(email: string, password: string) {
             name: "Administrador",
             email,
             password: hashedPassword,
+            households: {
+                create: {
+                    role: "OWNER",
+                    household: {
+                        create: {
+                            name: "Administrador Household",
+                        },
+                    },
+                },
+            },
         },
     });
 

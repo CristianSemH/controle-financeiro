@@ -14,49 +14,62 @@ datasource db {
 }
 
 model Transaction {
-  id          String   @id @default(uuid())
-  description String
-  amount      Float
-  type        TransactionType
-  date        DateTime
-  purchaseDate DateTime?
+  id            String          @id @default(uuid())
+  description   String
+  amount        Float
+  type          TransactionType
+  date          DateTime
+  purchaseDate  DateTime?
   paymentMethod PaymentMethod?
-  createdAt   DateTime @default(now())
+  createdAt     DateTime        @default(now())
 
-  userId      String
-  user        User @relation(fields: [userId], references: [id])
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id])
 
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
+  createdById String
+  createdBy   User   @relation("TransactionCreatedBy", fields: [createdById], references: [id])
 
-  cardId      String?
-  card        Card? @relation(fields: [cardId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  cardId String?
+  card   Card?   @relation(fields: [cardId], references: [id])
+
+  @@index([householdId])
+  @@index([createdById])
+  @@index([categoryId])
+  @@index([cardId])
 }
 
 model Category {
-  id        String   @id @default(uuid())
+  id        String          @id @default(uuid())
   name      String
   type      TransactionType
-  createdAt DateTime @default(now())
+  createdAt DateTime        @default(now())
 
-  userId    String
-  user      User @relation(fields: [userId], references: [id])
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id])
 
   transactions Transaction[]
+
+  @@index([householdId])
 }
 
 model Goal {
-  id            String   @id @default(uuid())
-  name          String
-  targetAmount  Float
-  targetDate    DateTime
-  createdAt     DateTime @default(now())
+  id           String   @id @default(uuid())
+  name         String
+  targetAmount Float
+  targetDate   DateTime
+  createdAt    DateTime @default(now())
 
-  userId        String
-  user          User @relation(fields: [userId], references: [id])
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id])
 
   contributions GoalContribution[]
+
+  @@index([householdId])
 }
+
 model GoalContribution {
   id        String   @id @default(uuid())
   amount    Decimal
@@ -72,11 +85,38 @@ model Card {
   limit     Float
   createdAt DateTime @default(now())
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id])
+
   transactions Transaction[]
 
+  @@index([householdId])
+}
+
+model Household {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  members      HouseholdMember[]
+  transactions Transaction[]
+  categories   Category[]
+  goals        Goal[]
+  cards        Card[]
+}
+
+model HouseholdMember {
+  id          String        @id @default(uuid())
+  householdId String
+  userId      String
+  role        HouseholdRole @default(MEMBER)
+
+  household Household @relation(fields: [householdId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([householdId, userId])
   @@index([userId])
+  @@index([householdId])
 }
 
 
@@ -92,6 +132,12 @@ enum PaymentMethod {
   CASH
 }
 
+enum HouseholdRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 model User {
   id            String   @id @default(uuid())
   name          String?
@@ -99,8 +145,6 @@ model User {
   password      String?
   createdAt     DateTime @default(now())
 
-  transactions  Transaction[]
-  categories    Category[]
-  goals         Goal[]
-  cards         Card[]
+  households          HouseholdMember[]
+  createdTransactions Transaction[] @relation("TransactionCreatedBy")
 }

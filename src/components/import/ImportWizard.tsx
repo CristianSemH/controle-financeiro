@@ -22,6 +22,7 @@ type Card = {
 };
 
 type ImportWizardProps = {
+    householdId: string;
     transactions: ParsedImportRow[];
     parseErrors: CsvImportError[];
     categories: Category[];
@@ -47,6 +48,7 @@ function normalizeText(value: string) {
 }
 
 export default function ImportWizard({
+    householdId,
     transactions,
     parseErrors,
     categories,
@@ -123,6 +125,7 @@ export default function ImportWizard({
                     description: form.description.trim(),
                     amount: Number(form.amount),
                     type: "EXPENSE",
+                    householdId,
                     categoryId: form.categoryId,
                     date: form.paymentDate,
                     purchaseDate: form.purchaseDate,

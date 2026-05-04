@@ -6,6 +6,8 @@ import {
     Filter,
     Receipt,
     Wallet,
+    EyeOff,
+    Eye
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ConfirmModal from "@/src/components/ui/ConfirmModal";
@@ -52,6 +54,8 @@ export default function TransactionsPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [cards, setCards] = useState<Card[]>([])
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const [countFilter, setCountFilter] = useState(0);
 
     const now = new Date();
     const [selectedMonthYear, setSelectedMonthYear] = useState(
@@ -61,6 +65,7 @@ export default function TransactionsPage() {
     const [selectedType, setSelectedType] = useState("ALL");
     const [selectedCategory, setSelectedCategory] = useState("ALL");
     const [selectedCard, setSelectedCard] = useState("ALL");
+    const [description, setDescription] = useState("");
 
     const availableCategories = useMemo(() => {
         if (selectedType === "ALL") return categories;
@@ -174,21 +179,31 @@ export default function TransactionsPage() {
 
         async function loadTransactions() {
             const params = new URLSearchParams({ monthYear: selectedMonthYear });
+            setCountFilter(0);
 
             if (selectedPurchaseMonthYear) {
                 params.set("purchaseMonthYear", selectedPurchaseMonthYear);
+                setCountFilter(countFilter + 1);
             }
 
             if (selectedType !== "ALL") {
                 params.set("type", selectedType);
+                setCountFilter(countFilter + 1);
             }
 
             if (selectedCategory !== "ALL") {
                 params.set("categoryId", selectedCategory);
+                setCountFilter(countFilter + 1);
             }
 
             if (selectedCard !== "ALL") {
                 params.set("cardId", selectedCard);
+                setCountFilter(countFilter + 1);
+            }
+
+            if (description !== "") {
+                params.set("description", description);
+                setCountFilter(countFilter + 1);
             }
 
             const res = await fetch(`/api/transactions?${params.toString()}`);
@@ -203,23 +218,37 @@ export default function TransactionsPage() {
         return () => {
             isMounted = false;
         };
-    }, [selectedMonthYear, selectedPurchaseMonthYear, selectedType, selectedCategory, selectedCard]);
+    }, [selectedMonthYear, selectedPurchaseMonthYear, selectedType, selectedCategory, selectedCard, description]);
 
     async function confirmDelete() {
         if (!deleteId) return;
+        setCountFilter(0);
 
         const params = new URLSearchParams({ monthYear: selectedMonthYear });
 
         if (selectedPurchaseMonthYear) {
             params.set("purchaseMonthYear", selectedPurchaseMonthYear);
+            setCountFilter(countFilter + 1);
         }
 
         if (selectedType !== "ALL") {
             params.set("type", selectedType);
+            setCountFilter(countFilter + 1);
         }
 
         if (selectedCategory !== "ALL") {
             params.set("categoryId", selectedCategory);
+            setCountFilter(countFilter + 1);
+        }
+
+        if (selectedCard !== "ALL") {
+            params.set("cardId", selectedCard);
+            setCountFilter(countFilter + 1);
+        }
+
+        if (description !== "") {
+            params.set("description", description);
+            setCountFilter(countFilter + 1);
         }
 
         await fetch(`/api/transactions/${deleteId}`, {
@@ -255,84 +284,116 @@ export default function TransactionsPage() {
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border p-4 md:p-5 mb-6">
-                <div className="flex items-center gap-2 mb-4 text-gray-700">
-                    <Filter size={16} />
-                    <h2 className="text-sm font-semibold">Filtros de movimentacoes</h2>
+                <div className="flex flex-col">
+                    <div
+                        className="flex items-center justify-between mb-2 text-gray-700 cursor-pointer"
+                        onClick={() => setIsOpen(!isOpen)}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Filter size={16} />
+                            <h2 className="text-sm font-semibold">Filtros de movimentações</h2>
+                        </div>
+
+                        <span>
+                            {isOpen ? <EyeOff size={32} /> : <Eye size={32} />}
+                        </span>
+
+
+                    </div>
+                    <div className="flex justify-end">
+                        {!isOpen && countFilter > 0 ? <span className="text-xs text-indigo-600">{countFilter} Filtros ativos</span> : null}
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                    <div className="space-y-1">
-                        <label className="text-xs text-gray-500 flex items-center gap-1">
-                            <Calendar size={13} /> Mes/Ano Pagamento
-                        </label>
-                        <input
-                            type="month"
-                            value={selectedMonthYear}
-                            onChange={(e) => setSelectedMonthYear(e.target.value)}
-                            className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
+                <div
+                    className={`grid transition-all duration-300 overflow-hidden ${isOpen ? "max-h-[500px] opacity-100 mt-4" : "max-h-0 opacity-0"
+                        }`}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500 flex items-center gap-1">
+                                <Calendar size={13} /> Mes/Ano Pagamento
+                            </label>
+                            <input
+                                type="month"
+                                value={selectedMonthYear}
+                                onChange={(e) => setSelectedMonthYear(e.target.value)}
+                                className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500 flex items-center gap-1">
+                                <Calendar size={13} /> Mes/Ano Compra
+                            </label>
+                            <input
+                                type="month"
+                                value={selectedPurchaseMonthYear}
+                                onChange={(e) => setSelectedPurchaseMonthYear(e.target.value)}
+                                className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500">Tipo</label>
+                            <select
+                                value={selectedType}
+                                onChange={(e) => {
+                                    const nextType = e.target.value;
+                                    setSelectedType(nextType);
+                                    setSelectedCategory("ALL");
+                                }}
+                                className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="ALL">Todos</option>
+                                <option value="INCOME">Entradas</option>
+                                <option value="EXPENSE">Saidas</option>
+                            </select>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500">Categoria</label>
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="ALL">Todas</option>
+                                {availableCategories.map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500">Cartão</label>
+                            <select
+                                value={selectedCard}
+                                onChange={(e) => setSelectedCard(e.target.value)}
+                                className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="ALL">Todas</option>
+                                {cards.map((card) => (
+                                    <option key={card.id} value={card.id}>
+                                        {card.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-500">Descrição</label>
+                            <input
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                type="text"
+                                className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="text-xs text-gray-500 flex items-center gap-1">
-                            <Calendar size={13} /> Mes/Ano Compra
-                        </label>
-                        <input
-                            type="month"
-                            value={selectedPurchaseMonthYear}
-                            onChange={(e) => setSelectedPurchaseMonthYear(e.target.value)}
-                            className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-xs text-gray-500">Tipo</label>
-                        <select
-                            value={selectedType}
-                            onChange={(e) => {
-                                const nextType = e.target.value;
-                                setSelectedType(nextType);
-                                setSelectedCategory("ALL");
-                            }}
-                            className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <option value="ALL">Todos</option>
-                            <option value="INCOME">Entradas</option>
-                            <option value="EXPENSE">Saidas</option>
-                        </select>
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-xs text-gray-500">Categoria</label>
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <option value="ALL">Todas</option>
-                            {availableCategories.map((category) => (
-                                <option key={category.id} value={category.id}>
-                                    {category.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-xs text-gray-500">Cartão</label>
-                        <select
-                            value={selectedCard}
-                            onChange={(e) => setSelectedCard(e.target.value)}
-                            className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <option value="ALL">Todas</option>
-                            {cards.map((card) => (
-                                <option key={card.id} value={card.id}>
-                                    {card.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
                 </div>
             </div>
 

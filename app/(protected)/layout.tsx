@@ -62,22 +62,19 @@ export default function ProtectedLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} bg-slate-50 text-slate-800 antialiased pb-24 h-screen`}>
-
         <ToastProvider>
           <HouseholdProvider>
-            <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24 text-gray-700">
-              <div className="max-w-6xl mx-auto mb-4">
+            <div className="min-h-screen bg-slate-50 px-4 pt-2 pb-24 text-gray-700">
+              <div className="space-y-3 mb-4">
                 <HouseholdSelector />
               </div>
               {children}
             </div>
-            <FloatingButton />
+   
             <Navbar />
           </HouseholdProvider>
         </ToastProvider>
-
       </body>
-
     </html>
   );
 }

@@ -34,15 +34,15 @@ export default function NewCardPage() {
             }),
         });
 
-        showToast("Cartao criado com sucesso", "success");
+        showToast("Cartão criado com sucesso", "success");
         router.push("/cards");
     }
 
     return (
-        <CardForm title="Novo Cartao" description="Cadastre um cartao para facilitar suas transacoes">
+        <CardForm title="Novo Cartão" description="Cadastre um cartão para facilitar suas transacoes">
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                    <Label>Nome do Cartao</Label>
+                    <Label>Nome do Cartão</Label>
                     <Input
                         placeholder="Ex: Nubank, Itau, Inter..."
                         value={form.name}
@@ -78,7 +78,7 @@ export default function NewCardPage() {
                 </div>
 
                 <Button type="submit" disabled={loading}>
-                    {loading ? "Salvando..." : "Salvar Cartao"}
+                    {loading ? "Salvando..." : "Salvar Cartão"}
                 </Button>
 
                 <Button

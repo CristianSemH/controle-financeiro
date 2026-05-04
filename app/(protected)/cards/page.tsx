@@ -44,14 +44,14 @@ export default function CardsPage() {
     return (
         <>
             <HearderList
-                title="Cartoes"
-                description="Gerencie seus cartoes de credito"
+                title="Cartões"
+                description="Gerencie seus Cartões de crédito"
                 link="/cards/new"
             />
 
             {cards.length === 0 && (
                 <CardListEmpty
-                    message="Nenhum cartao cadastrado."
+                    message="Nenhum cartão cadastrado."
                     icon={<CreditCard className="mx-auto text-slate-300 mb-3" size={28} />}
                 />
             )}
@@ -82,8 +82,8 @@ export default function CardsPage() {
 
             <ConfirmModal
                 open={!!deleteId}
-                title="Excluir cartao"
-                description="Essa acao nao podera ser desfeita."
+                title="Excluir cartão"
+                description="Essa ação nao podera ser desfeita."
                 confirmText="Excluir"
                 cancelText="Cancelar"
                 onConfirm={confirmDelete}

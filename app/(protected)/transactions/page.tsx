@@ -277,8 +277,8 @@ export default function TransactionsPage() {
     return (
         <>
             <HearderList
-                title="Transacoes"
-                description="Visualize, filtre e gerencie todas as suas movimentacoes"
+                title="Transações"
+                description="Visualize, filtre e gerencie todas as suas movimentações"
                 link="/transactions/new"
             />
 
@@ -310,7 +310,7 @@ export default function TransactionsPage() {
                     >
                         <div className="flex items-center gap-2">
                             <Filter size={16} />
-                            <h2 className="text-sm font-semibold">Filtros de movimentacoes</h2>
+                            <h2 className="text-sm font-semibold">Filtros de movimentações</h2>
                         </div>
 
                         {isOpen ? <EyeOff size={32} /> : <Eye size={32} />}
@@ -423,7 +423,7 @@ export default function TransactionsPage() {
 
             {!loading && transactions.length === 0 && (
                 <CardListEmpty
-                    message="Nenhuma transacao encontrada para os filtros selecionados."
+                    message="Nenhuma transação encontrada para os filtros selecionados."
                     icon={<Receipt className="mx-auto text-slate-300 mb-3" size={28} />}
                 />
             )}
@@ -530,7 +530,7 @@ export default function TransactionsPage() {
 
             <ConfirmModal
                 open={!!deleteId}
-                title="Excluir Transacao"
+                title="Excluir Transação"
                 description="Essa acao nao podera ser desfeita."
                 confirmText="Excluir"
                 cancelText="Cancelar"

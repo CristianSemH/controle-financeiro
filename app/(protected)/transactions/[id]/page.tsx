@@ -112,7 +112,7 @@ export default function EditTransactionPage() {
       }),
     });
 
-    showToast("Transacao atualizada com sucesso", "success");
+    showToast("Transação atualizada com sucesso", "success");
     router.push("/transactions");
   }
 
@@ -120,10 +120,10 @@ export default function EditTransactionPage() {
     <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-800">
-          Editar Transacao
+          Editar Transação
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          Atualize ou remova esta movimentacao
+          Atualize ou remova esta movimentação
         </p>
       </div>
 
@@ -295,7 +295,7 @@ export default function EditTransactionPage() {
 
           <div className="pt-2 space-y-3">
             <Button type="submit" disabled={saving}>
-              {saving ? "Salvando..." : "Salvar Alteracoes"}
+              {saving ? "Salvando..." : "Salvar Alterações"}
             </Button>
 
             <Button

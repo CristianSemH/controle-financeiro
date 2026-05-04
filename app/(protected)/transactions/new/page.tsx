@@ -153,13 +153,13 @@ export default function NewTransactionPage() {
                 cardId: isCreditExpense ? form.cardId : undefined,
             });
 
-            showToast("Transacao criada com sucesso", "success");
+            showToast("Transação criada com sucesso", "success");
             router.push("/transactions");
         } catch (currentError) {
             setError(
                 currentError instanceof Error
                     ? currentError.message
-                    : "Nao foi possivel salvar a transacao"
+                    : "Nao foi possivel salvar a transação"
             );
         } finally {
             setLoading(false);
@@ -178,10 +178,10 @@ export default function NewTransactionPage() {
         <div className="min-h-screen bg-slate-50 px-4 pt-6 pb-24">
             <div className="mb-6">
                 <h1 className="text-2xl font-semibold text-slate-800">
-                    Nova Transacao
+                    Nova Transação
                 </h1>
                 <p className="text-sm text-slate-400 mt-1">
-                    Registre uma nova movimentacao
+                    Registre uma nova movimentação
                 </p>
             </div>
 
@@ -356,7 +356,7 @@ export default function NewTransactionPage() {
                     </div>
 
                     <Button type="submit" disabled={loading}>
-                        {loading ? "Salvando..." : "Salvar Transacao"}
+                        {loading ? "Salvando..." : "Salvar Transação"}
                     </Button>
 
                     <Button

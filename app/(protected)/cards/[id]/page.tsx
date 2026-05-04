@@ -51,15 +51,15 @@ export default function EditCardPage() {
             }),
         });
 
-        showToast("Cartao atualizado com sucesso", "success");
+        showToast("Cartão atualizado com sucesso", "success");
         router.push("/cards");
     }
 
     return (
-        <CardForm title="Editar Cartao" description="Atualize os dados deste cartao">
+        <CardForm title="Editar Cartão" description="Atualize os dados deste cartão">
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                    <Label>Nome do Cartao</Label>
+                    <Label>Nome do Cartão</Label>
                     <Input
                         value={form.name}
                         onChange={(e) => setForm({ ...form, name: e.target.value })}

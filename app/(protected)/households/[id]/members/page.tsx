@@ -94,7 +94,7 @@ export default function HouseholdMembersPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="space-y-3">
             <div>
                 <h1 className="text-2xl font-semibold text-slate-800">
                     Membros da familia
